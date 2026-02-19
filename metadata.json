@@ -1,0 +1,5 @@
+{
+  "name": "RecruiterOps",
+  "description": "AI Recruiter Operations Agent. Automated scheduling, stalled candidate detection, and daily pipeline summaries.",
+  "requestFramePermissions": []
+}
