@@ -56,7 +56,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
         </div>
         <div className="flex items-center gap-6">
           <button onClick={() => setIsSignUp(!isSignUp)} className="text-xs font-black uppercase text-slate-400 hover:text-slate-900 transition-colors tracking-widest">
-            {isSignUp ? 'Log In' : 'Join Now'}
+            {isSignUp ? 'Log In' : 'Sign Up'}
           </button>
           {!configured && (
             <button onClick={onDemoLogin} className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-sm">
@@ -80,10 +80,10 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
 
         <div className="w-full max-w-[460px] bg-white rounded-[2.5rem] p-12 text-center shadow-2xl shadow-slate-200 border border-slate-100 z-10 relative">
           <h2 className="text-[32px] font-black text-slate-900 tracking-tight mb-2 leading-none uppercase">
-            {isSignUp ? 'Start Scaling' : 'Ops Login'}
+            {isSignUp ? 'Create Account' : 'Recruiter Login'}
           </h2>
           <p className="text-slate-500 font-medium text-sm mb-10 leading-relaxed">
-            {isSignUp ? 'Deploy your execution accelerator for $49/mo' : 'Resume your high-velocity workflow'}
+            {isSignUp ? 'Create your RecruiterOps account' : 'Welcome back. Sign in to your recruiting desk.'}
           </p>
 
           {error && (
@@ -133,7 +133,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
               {loading ? (
                 <i className="fa-solid fa-spinner fa-spin"></i>
               ) : (
-                isSignUp ? 'ACTIVATE DESK' : 'SIGN IN'
+                isSignUp ? 'ACTIVATE ACCOUNT' : 'SIGN IN'
               )}
             </button>
           </form>
@@ -151,12 +151,12 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
 
           <div className="mt-8">
             <p className="text-xs text-slate-500 font-medium">
-              {isSignUp ? 'Already a user?' : "New to RecruiterOps?"}{' '}
+              {isSignUp ? 'Already have an account?' : "New to RecruiterOps?"}{' '}
               <button
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-indigo-600 hover:text-indigo-700 font-bold underline underline-offset-4"
               >
-                {isSignUp ? 'Login' : 'Join for $49/mo'}
+                {isSignUp ? 'Sign In' : 'Create an Account'}
               </button>
             </p>
           </div>
