@@ -8,20 +8,28 @@ interface LandingViewProps {
 const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) => {
   const faqs = [
     {
-      q: "Is there a free trial?",
-      a: "No. RecruiterOps is a professional tool for active desks. Access is restricted to paid subscribers to ensure peak infrastructure performance for all users."
+      q: "I already use an ATS. Why do I need this?",
+      a: "Most ATS platforms are built for tracking, not for taking action. They store your data but don't tell you which candidates are going cold, don't draft your follow-ups, and don't flag what needs attention today. RecruiterOps sits on top of whatever you're already using and handles the operational work that falls through the cracks — the follow-ups you meant to send, the interviews that didn't get scheduled, the candidates who went silent."
     },
     {
-      q: "Does this source candidates?",
-      a: "No. RecruiterOps is an execution accelerator. It sits on top of your existing pipeline to handle scheduling, stalled candidate detection, and daily follow-ups. We fix the leaky bucket, we don't fill it."
+      q: "I'm a solo recruiter. Is this really built for me?",
+      a: "Yes — this was designed specifically for independent recruiters and small boutique agencies who don't have a coordinator or admin support. When you're running a full desk alone, every hour you spend on scheduling, follow-ups, and status updates is an hour you're not billing. RecruiterOps handles that operational layer so you can stay focused on client relationships and placements."
     },
     {
-      q: "What integrations do I need?",
-      a: "The agent works best with Make.com webhooks and a Gemini API key. Setup takes less than 5 minutes."
+      q: "Will this replace the personal touch that makes my placements work?",
+      a: "No. RecruiterOps handles the logistics — scheduling, follow-up drafts, daily briefings — not the relationship. Every message it drafts is reviewed and sent by you. Every interview is confirmed by you. The AI does the administrative heavy lifting so you have more time for the conversations that actually close placements."
     },
     {
-      q: "How does it 'detect' stalled candidates?",
-      a: "The agent monitors the 'Last Activity' timestamp of every candidate in your pipeline. If a profile remains static for 48 hours without a stage move or update, it is flagged in your morning briefing."
+      q: "What counts as a stalled candidate and how does it know?",
+      a: "RecruiterOps monitors the last activity date on every candidate in your pipeline. If a candidate hasn't moved stages or received a follow-up in 48 hours, they're flagged in your daily briefing with a suggested next action. You decide what to do — the system just makes sure nothing slips through unnoticed."
+    },
+    {
+      q: "Does RecruiterOps source or screen candidates?",
+      a: "No. RecruiterOps works with candidates already in your pipeline — people you've already identified and are actively working. It does not source from job boards, LinkedIn, or any external database. Think of it as your operations layer, not your sourcing tool."
+    },
+    {
+      q: "How long does setup take?",
+      a: "Most recruiters are up and running in under 10 minutes. Create your account, add your first job order, and start adding candidates. The AI briefings and stalled detection activate automatically once your pipeline has data. Optional integrations like calendar scheduling take a few extra minutes to configure but are not required to get started."
     }
   ];
 
