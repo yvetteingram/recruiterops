@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Job, Candidate, Profile, ActivityLog, CandidateStage } from './types';
 import { supabase, isSupabaseConfigured } from './services/supabase';
-import { MOCK_JOBS, MOCK_CANDIDATES } from './constants';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import JobsView from './components/JobsView';
@@ -9,6 +8,69 @@ import CandidatesView from './components/CandidatesView';
 import SettingsView from './components/SettingsView';
 import AuthView from './components/AuthView';
 import LandingView from './components/LandingView';
+
+// ✅ Demo profile aligned with actual Supabase schema
+const DEMO_PROFILE: Profile = {
+  id: 'demo-user',
+  full_name: 'Solo Recruiter',
+  email: 'hello@recruiterops.ai',
+  plan: 'pro',
+  subscription_status: 'active',
+  trial_ends_at: null,
+  gumroad_sale_id: null,
+};
+
+const MOCK_JOBS: Job[] = [
+  {
+    id: 'mock-job-1',
+    title: 'Senior Product Manager',
+    client: 'TechCorp Inc.',
+    salary: '$120,000 - $150,000',
+    location: 'New York / Hybrid',
+    status: 'active',
+    description: 'Leading product strategy for a B2B SaaS platform.',
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    isDemo: true,
+  },
+  {
+    id: 'mock-job-2',
+    title: 'Head of Engineering',
+    client: 'Boutique Search Partners',
+    salary: '$180,000 - $220,000',
+    location: 'Remote',
+    status: 'active',
+    description: 'Leading a team of 12 engineers in a scale-up environment.',
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    isDemo: true,
+  },
+];
+
+const MOCK_CANDIDATES: Candidate[] = [
+  {
+    id: 'mock-c-1',
+    jobId: 'mock-job-1',
+    name: 'Sarah Johnson',
+    title: 'Product Manager',
+    company: 'Acme Corp',
+    linkedInUrl: '',
+    email: 'sarah@example.com',
+    stage: CandidateStage.SCREENED,
+    lastActivityAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    isDemo: true,
+  },
+  {
+    id: 'mock-c-2',
+    jobId: 'mock-job-2',
+    name: 'David Chen',
+    title: 'VP Engineering',
+    company: 'StartupXYZ',
+    linkedInUrl: '',
+    email: 'david@example.com',
+    stage: CandidateStage.INTERVIEWING,
+    lastActivityAt: new Date().toISOString(),
+    isDemo: true,
+  },
+];
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'jobs' | 'candidates' | 'settings'>('dashboard');
@@ -22,7 +84,7 @@ const App: React.FC = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [isAddingJob, setIsAddingJob] = useState(false);
-  
+
   const initialFetchDone = useRef(false);
   const configured = isSupabaseConfigured();
 
@@ -32,7 +94,7 @@ const App: React.FC = () => {
       timestamp: new Date().toISOString(),
       event,
       details,
-      type
+      type,
     };
     setLogs(prev => [newLog, ...prev].slice(0, 50));
   }, []);
@@ -40,11 +102,7 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     setLoading(true);
     if (supabase && configured) {
-      try {
-        await supabase.auth.signOut();
-      } catch (e) {
-        console.error("Logout error", e);
-      }
+      try { await supabase.auth.signOut(); } catch (e) { console.error("Logout error", e); }
     }
     setSession(null);
     setProfile(null);
@@ -58,96 +116,115 @@ const App: React.FC = () => {
   };
 
   const handleExportCSV = useCallback(() => {
-    if (!candidates.length) {
-      alert("No candidate data to export.");
-      return;
-    }
+    if (!candidates.length) { alert("No candidate data to export."); return; }
     const headers = ["Name", "Title", "Company", "Stage", "Last Activity"];
     const rows = candidates.map(c => [
-      `"${c.name}"`,
-      `"${c.title}"`,
-      `"${c.company}"`,
-      `"${c.stage}"`,
-      `"${c.lastActivityAt || ''}"`
+      `"${c.name}"`, `"${c.title}"`, `"${c.company}"`,
+      `"${c.stage}"`, `"${c.lastActivityAt || ''}"`
     ]);
     const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `RecruiterOps_pipeline_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `RecruiterOps_pipeline_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
-    addLog("Pipeline Exported", "Candidate data has been extracted to CSV for offline analysis.", "user");
+    addLog("Pipeline Exported", "Candidate data exported to CSV.", "user");
   }, [candidates, addLog]);
 
   const fetchData = useCallback(async (force = false) => {
     if (!configured && !demoMode) { setLoading(false); return; }
-    
+
     if (demoMode) {
       setJobs(MOCK_JOBS);
       setCandidates(MOCK_CANDIDATES);
-      setProfile({
-        id: 'demo-user',
-        fullName: 'Solo Recruiter',
-        email: 'hello@recruiterops.ai',
-        companyName: 'Boutique Search Partners',
-        role: 'Founder & Principal',
-        hasCompletedOnboarding: true,
-        plan: 'starter',
-        subscriptionStatus: 'active',
-        webhookOutreach: process.env.MAKE_WEBHOOK_OUTREACH,
-        webhookCalendar: undefined
-      });
+      setProfile(DEMO_PROFILE);
       setLoading(false);
       return;
     }
 
     if (initialFetchDone.current && !force) return;
     setLoading(true);
+
     try {
       if (!supabase || !configured) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+
+      // ✅ Only fetch columns that actually exist in the profiles table
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, plan, subscription_status, trial_ends_at, gumroad_sale_id, created_at')
+        .eq('id', user.id)
+        .single();
+
       if (profileData) {
         setProfile({
           id: profileData.id,
-          fullName: profileData.full_name,
-          email: user.email || '',
-          companyName: profileData.company_name,
-          role: profileData.role,
-          hasCompletedOnboarding: profileData.has_completed_onboarding,
-          plan: profileData.plan,
-          subscriptionStatus: profileData.subscription_status,
-          aiPersona: profileData.ai_persona,
-          webhookOutreach: profileData.webhook_outreach || process.env.MAKE_WEBHOOK_OUTREACH,
-          webhookCalendar: profileData.webhook_calendar,
-          licenseKey: profileData.license_key
+          email: profileData.email || user.email || '',
+          full_name: profileData.full_name || '',
+          plan: profileData.plan || 'starter',
+          subscription_status: profileData.subscription_status || 'active',
+          trial_ends_at: profileData.trial_ends_at || null,
+          gumroad_sale_id: profileData.gumroad_sale_id || null,
+          created_at: profileData.created_at,
         });
       }
-      const { data: jobsData } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
-      const { data: candidatesData } = await supabase.from('candidates').select('*').order('created_at', { ascending: false });
-      if (jobsData) setJobs(jobsData.map((j: any) => ({ ...j, jobId: j.id, createdAt: j.created_at, isDemo: j.is_demo })) as Job[]);
-      if (candidatesData) setCandidates(candidatesData.map((c: any) => ({ ...c, jobId: c.job_id, linkedInUrl: c.linkedIn_url, outreachDraft: c.outreach_draft, isDemo: c.is_demo, phoneNumber: c.phoneNumber, lastActivityAt: c.last_activity_at })) as Candidate[]);
+
+      const { data: jobsData } = await supabase
+        .from('jobs').select('*').order('created_at', { ascending: false });
+      const { data: candidatesData } = await supabase
+        .from('candidates').select('*').order('created_at', { ascending: false });
+
+      if (jobsData) {
+        setJobs(jobsData.map((j: any) => ({
+          id: j.id,
+          title: j.title,
+          client: j.client,
+          salary: j.salary,
+          location: j.location,
+          status: j.status,
+          description: j.description,
+          createdAt: j.created_at,
+        })));
+      }
+
+      if (candidatesData) {
+        setCandidates(candidatesData.map((c: any) => ({
+          id: c.id,
+          jobId: c.job_id,
+          name: c.name,
+          title: c.title,
+          company: c.company,
+          linkedInUrl: c.linkedIn_url || '',
+          email: c.email,
+          phoneNumber: c.phoneNumber,
+          stage: c.stage,
+          outreachDraft: c.outreach_draft,
+          matchScore: c.match_score,
+          aiAnalysis: c.ai_analysis,
+          lastActivityAt: c.last_activity_at,
+        })));
+      }
+
       initialFetchDone.current = true;
     } catch (error) {
-      console.error("Error fetching talent data:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
   }, [configured, demoMode]);
 
   useEffect(() => {
-    if (!configured || !supabase || !supabase.auth) { 
-      setLoading(false); 
-      return; 
+    if (!configured || !supabase || !supabase.auth) {
+      setLoading(false);
+      return;
     }
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) setLoading(false);
     }).catch(e => {
-      console.error("Session protocol error", e);
+      console.error("Session error", e);
       setLoading(false);
     });
 
@@ -162,29 +239,29 @@ const App: React.FC = () => {
       }
     });
 
-    return () => {
-      if (subscription) subscription.unsubscribe();
-    };
+    return () => { if (subscription) subscription.unsubscribe(); };
   }, [configured, demoMode]);
 
   useEffect(() => {
     if ((session && configured) || demoMode) fetchData();
   }, [session, configured, demoMode, fetchData]);
 
-  // Strict check: Only 'active' subscribers get in.
-  const isExpired = profile && profile.subscriptionStatus !== 'active';
+  // ✅ Subscription check using actual schema fields
+  const isExpired = profile &&
+    profile.subscription_status !== 'active' &&
+    !(profile.subscription_status === 'trialing' && profile.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
 
   if (loading && !jobs.length) return (
     <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="h-12 w-12 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin"></div>
     </div>
   );
-  
+
   if (!session && !demoMode) {
     if (showAuth) {
       return (
-        <AuthView 
-          onAuthSuccess={() => { setShowAuth(false); fetchData(true); }} 
+        <AuthView
+          onAuthSuccess={() => { setShowAuth(false); fetchData(true); }}
           onDemoLogin={() => { setDemoMode(true); setShowAuth(false); }}
           onBack={() => setShowAuth(false)}
         />
@@ -193,29 +270,42 @@ const App: React.FC = () => {
     return <LandingView onGetStarted={() => setShowAuth(true)} onDemoMode={() => setDemoMode(true)} />;
   }
 
+  const stats = {
+    totalJobs: jobs.length,
+    activeCandidates: candidates.length,
+    sessionsBooked: candidates.filter(c => c.stage === CandidateStage.INTERVIEWING).length,
+    placements: candidates.filter(c => c.stage === CandidateStage.PRESENTED).length,
+    timeSavedMinutes: candidates.length * 20,
+    stalledItemsCount: 0,
+  };
+
   return (
     <div className="flex min-h-screen bg-white font-sans text-slate-900">
       {isExpired && (
         <div className="fixed inset-0 z-[1000] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6">
           <div className="bg-white rounded-[2.5rem] shadow-2xl p-12 max-w-lg text-center border border-slate-100">
             <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter uppercase">Subscription Required</h2>
-            <p className="text-slate-500 mb-8 font-medium">RecruiterOps access is restricted to active paid members. Please verify your professional license key to enter the workspace.</p>
-            <button 
+            <p className="text-slate-500 mb-8 font-medium">
+              Your RecruiterOps subscription is inactive. Please update your subscription to continue.
+            </p>
+            <button
               onClick={() => setActiveTab('settings')}
               className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 transition-all mb-4 shadow-xl active:scale-[0.98]"
             >
               Update Subscription
             </button>
-            <button onClick={handleLogout} className="text-sm font-bold text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Sign Out</button>
+            <button onClick={handleLogout} className="text-sm font-bold text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">
+              Sign Out
+            </button>
           </div>
         </div>
       )}
 
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={(tab) => { setActiveTab(tab); if (tab !== 'candidates') setSelectedJobId(null); }} 
-        jobCount={jobs.length} 
-        plan={profile?.plan || 'starter'} 
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={(tab) => { setActiveTab(tab); if (tab !== 'candidates') setSelectedJobId(null); }}
+        jobCount={jobs.length}
+        plan={profile?.plan || 'starter'}
         onLogout={handleLogout}
         dbConnected={configured}
       />
@@ -231,16 +321,58 @@ const App: React.FC = () => {
               <span className="text-xs font-black text-slate-900 uppercase">1 Placement / mo</span>
               <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest">Velocity Target</span>
             </div>
-            <button onClick={() => setActiveTab('settings')} className="h-14 w-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-900 font-black shadow-sm transition-all hover:bg-slate-50 active:scale-95">
-              {(profile?.fullName || 'R').charAt(0).toUpperCase()}
+            <button
+              onClick={() => setActiveTab('settings')}
+              className="h-14 w-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-900 font-black shadow-sm transition-all hover:bg-slate-50 active:scale-95"
+            >
+              {(profile?.full_name || 'R').charAt(0).toUpperCase()}
             </button>
           </div>
         </header>
 
-        {activeTab === 'dashboard' && <Dashboard stats={{totalJobs: jobs.length, activeCandidates: candidates.length, sessionsBooked: candidates.filter(c => c.stage === CandidateStage.INTERVIEWING).length, placements: candidates.filter(c => c.stage === CandidateStage.PRESENTED).length, timeSavedMinutes: candidates.length * 20, stalledItemsCount: 0}} jobs={jobs} candidates={candidates} logs={logs} onStartNewSearch={() => setActiveTab('jobs')} />}
-        {activeTab === 'jobs' && <JobsView jobs={jobs} onAddJob={(j) => setJobs(p => [j, ...p])} onUpdateJob={(j) => setJobs(p => p.map(x => x.id === j.id ? j : x))} onDeleteJob={(id) => setJobs(p => p.filter(x => x.id !== id))} plan={profile?.plan || 'starter'} onManageCandidates={(id) => { setSelectedJobId(id); setActiveTab('candidates'); }} isForcingAdd={isAddingJob} onAddComplete={() => setIsAddingJob(false)} />}
-        {activeTab === 'candidates' && <CandidatesView candidates={candidates} jobs={jobs} profile={profile} onUpdateCandidate={(c) => setCandidates(p => p.map(x => x.id === c.id ? c : x))} onAddCandidate={(c) => setCandidates(p => [c, ...p])} onLog={addLog} filterJobId={selectedJobId} onClearFilter={() => setSelectedJobId(null)} />}
-        {activeTab === 'settings' && profile && <SettingsView profile={profile} stats={{totalJobs: jobs.length, activeCandidates: candidates.length, sessionsBooked: candidates.filter(c => c.stage === CandidateStage.INTERVIEWING).length, placements: candidates.filter(c => c.stage === CandidateStage.PRESENTED).length, timeSavedMinutes: candidates.length * 20, stalledItemsCount: 0}} jobs={jobs} activePlan={profile.plan} onPlanChange={(p) => setProfile(prev => prev ? {...prev, plan: p} : null)} onUpdateProfile={(p) => setProfile(prev => prev ? {...prev, ...p} : null)} onClearDemo={() => fetchData(true)} onExportCSV={handleExportCSV} />}
+        {activeTab === 'dashboard' && (
+          <Dashboard
+            stats={stats}
+            jobs={jobs}
+            candidates={candidates}
+            logs={logs}
+            onStartNewSearch={() => setActiveTab('jobs')}
+          />
+        )}
+        {activeTab === 'jobs' && (
+          <JobsView
+            jobs={jobs}
+            onAddJob={(j) => setJobs(p => [j, ...p])}
+            onUpdateJob={(j) => setJobs(p => p.map(x => x.id === j.id ? j : x))}
+            onDeleteJob={(id) => setJobs(p => p.filter(x => x.id !== id))}
+            plan={profile?.plan || 'starter'}
+            onManageCandidates={(id) => { setSelectedJobId(id); setActiveTab('candidates'); }}
+            isForcingAdd={isAddingJob}
+            onAddComplete={() => setIsAddingJob(false)}
+          />
+        )}
+        {activeTab === 'candidates' && (
+          <CandidatesView
+            candidates={candidates}
+            jobs={jobs}
+            profile={profile}
+            onUpdateCandidate={(c) => setCandidates(p => p.map(x => x.id === c.id ? c : x))}
+            onAddCandidate={(c) => setCandidates(p => [c, ...p])}
+            onLog={addLog}
+            filterJobId={selectedJobId}
+            onClearFilter={() => setSelectedJobId(null)}
+          />
+        )}
+        {activeTab === 'settings' && profile && (
+          <SettingsView
+            profile={profile}
+            stats={stats}
+            jobs={jobs}
+            onUpdateProfile={(updates) => setProfile(prev => prev ? { ...prev, ...updates } : null)}
+            onClearDemo={() => fetchData(true)}
+            onExportCSV={handleExportCSV}
+          />
+        )}
       </main>
     </div>
   );

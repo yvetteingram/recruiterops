@@ -13,19 +13,20 @@ export interface GroundingSource {
   uri: string;
 }
 
+// ✅ Plan types unified across all files
+export type Plan = 'starter' | 'pro' | 'agency';
+export type SubscriptionStatus = 'trialing' | 'active' | 'cancelled' | 'expired';
+
+// ✅ Matches actual Supabase profiles table columns
 export interface Profile {
   id: string;
-  fullName: string;
   email: string;
-  companyName?: string;
-  role?: string;
-  hasCompletedOnboarding: boolean;
-  plan: 'starter' | 'professional' | 'pro_plus';
-  subscriptionStatus: 'active' | 'expired' | 'cancelled';
-  aiPersona?: string;
-  webhookOutreach?: string;
-  webhookCalendar?: string;
-  licenseKey?: string;
+  full_name: string;
+  plan: Plan;
+  subscription_status: SubscriptionStatus;
+  trial_ends_at: string | null;
+  gumroad_sale_id: string | null;
+  created_at?: string;
 }
 
 export interface Job {
@@ -51,6 +52,8 @@ export interface Candidate {
   phoneNumber?: string;
   stage: CandidateStage;
   outreachDraft?: string;
+  matchScore?: number;
+  aiAnalysis?: string;
   isDemo?: boolean;
   lastActivityAt?: string;
 }

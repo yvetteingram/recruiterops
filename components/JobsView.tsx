@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Job } from '../types';
+import { Job, Plan } from '../types';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 
 interface JobsViewProps {
@@ -8,23 +8,29 @@ interface JobsViewProps {
   onUpdateJob?: (updatedJob: Job) => void;
   onDeleteJob?: (jobId: string) => void;
   onRefreshData?: () => void;
-  // Adjusted plan type to align with Profile and PRICING_TIERS in types.ts and constants.tsx
-  plan: 'starter' | 'professional' | 'pro_plus';
+  plan: Plan; // ✅ Uses unified Plan type
   onManageCandidates?: (jobId: string) => void;
   isForcingAdd?: boolean;
   onAddComplete?: () => void;
 }
 
-const JobsView: React.FC<JobsViewProps> = ({ 
-  jobs, 
-  onAddJob, 
+// ✅ Plan limits aligned with new plan names
+const PLAN_LIMITS: Record<Plan, number> = {
+  starter: 1,
+  pro: 10,
+  agency: 1000,
+};
+
+const JobsView: React.FC<JobsViewProps> = ({
+  jobs,
+  onAddJob,
   onUpdateJob,
   onDeleteJob,
-  onRefreshData, 
-  plan, 
-  onManageCandidates, 
-  isForcingAdd, 
-  onAddComplete 
+  onRefreshData,
+  plan,
+  onManageCandidates,
+  isForcingAdd,
+  onAddComplete,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
@@ -38,7 +44,7 @@ const JobsView: React.FC<JobsViewProps> = ({
       setEditingJob(null);
       setFormData({ title: '', client: '', salary: '', location: '', description: '' });
       setShowModal(true);
-      if (onAddComplete) onAddComplete();
+      onAddComplete?.();
     }
   }, [isForcingAdd, onAddComplete]);
 
@@ -49,19 +55,17 @@ const JobsView: React.FC<JobsViewProps> = ({
         client: editingJob.client,
         salary: editingJob.salary,
         location: editingJob.location || '',
-        description: editingJob.description
+        description: editingJob.description,
       });
       setShowModal(true);
     }
   }, [editingJob]);
 
-  // Aligned plan limits with the actual capacity values defined in PRICING_TIERS
-  const planLimits = { starter: 1, professional: 5, pro_plus: 1000 };
-  const isAtLimit = !editingJob && jobs.length >= planLimits[plan];
+  const jobLimit = PLAN_LIMITS[plan] ?? 1;
+  const isAtLimit = !editingJob && jobs.length >= jobLimit;
 
   const handleDelete = async (jobId: string) => {
-    if (!confirm("Are you sure you want to close this hiring requisition? All associated candidate data will be permanently archived.")) return;
-    
+    if (!confirm("Close this requisition? All associated candidate data will be archived.")) return;
     try {
       if (supabase && configured) {
         const { error } = await supabase.from('jobs').delete().eq('id', jobId);
@@ -76,14 +80,12 @@ const JobsView: React.FC<JobsViewProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!editingJob && isAtLimit && configured) {
-      alert("Agent capacity reached. Please upgrade to manage more open requisitions.");
+      alert(`Capacity reached for your ${plan} plan (${jobLimit} requisition${jobLimit > 1 ? 's' : ''}). Please upgrade to add more.`);
       return;
     }
 
     setLoading(true);
-
     try {
       const jobDataToSave = {
         title: formData.title,
@@ -95,64 +97,43 @@ const JobsView: React.FC<JobsViewProps> = ({
       };
 
       if (!configured || !supabase) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
+        await new Promise(resolve => setTimeout(resolve, 600));
         if (editingJob) {
-          const updated: Job = { ...editingJob, ...jobDataToSave };
-          onUpdateJob?.(updated);
+          onUpdateJob?.({ ...editingJob, ...jobDataToSave });
         } else {
-          const created: Job = {
+          onAddJob({
             ...jobDataToSave,
             id: Math.random().toString(36).substr(2, 9),
             createdAt: new Date().toISOString(),
-            isDemo: true
-          };
-          onAddJob(created);
+            isDemo: true,
+          });
         }
-        
         closeModal();
         return;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Authentication failure.");
+      if (!user) throw new Error("Authentication required.");
 
       if (editingJob) {
         const { data, error } = await supabase.from('jobs')
-          .update(jobDataToSave)
-          .eq('id', editingJob.id)
-          .select();
-        
+          .update(jobDataToSave).eq('id', editingJob.id).select();
         if (error) throw error;
-        if (data && data[0]) {
-          onUpdateJob?.({
-            ...editingJob,
-            ...jobDataToSave,
-            id: data[0].id
-          });
-        }
+        if (data?.[0]) onUpdateJob?.({ ...editingJob, ...jobDataToSave });
       } else {
-        const { data, error } = await supabase.from('jobs').insert({
-          ...jobDataToSave,
-          user_id: user.id 
-        }).select();
-
+        const { data, error } = await supabase.from('jobs')
+          .insert({ ...jobDataToSave, user_id: user.id }).select();
         if (error) throw error;
-        if (data && data[0]) {
-          onAddJob({
-            id: data[0].id,
-            ...jobDataToSave,
-            createdAt: data[0].created_at
-          });
+        if (data?.[0]) {
+          onAddJob({ id: data[0].id, ...jobDataToSave, createdAt: data[0].created_at });
         } else {
           onRefreshData?.();
         }
       }
-
       closeModal();
     } catch (err: any) {
       console.error("Error saving requisition:", err);
-      alert(`Failed to save requisition. ${err.message}`);
+      alert(`Failed to save. ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -168,160 +149,151 @@ const JobsView: React.FC<JobsViewProps> = ({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Active Requisitions ({jobs.length})</h2>
+          <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
+            Active Requisitions ({jobs.length}/{jobLimit === 1000 ? '∞' : jobLimit})
+          </h2>
           <p className="text-xs text-slate-500">Open hiring roles currently under AI management.</p>
         </div>
-        <button 
+        <button
           onClick={() => { setEditingJob(null); setShowModal(true); }}
           disabled={isAtLimit && configured}
-          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-bold text-sm ${
-            (isAtLimit && configured) 
-            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' 
-            : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200'
+          className={`px-5 py-3 rounded-xl transition-all flex items-center gap-2 font-black text-[10px] uppercase tracking-widest ${
+            isAtLimit && configured
+              ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 active:scale-95'
           }`}
         >
-          {(isAtLimit && configured) ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-plus"></i>}
-          <span>{(isAtLimit && configured) ? 'Capacity Reached' : 'Open New Requisition'}</span>
+          {isAtLimit && configured ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-plus"></i>}
+          {isAtLimit && configured ? 'Capacity Reached' : 'Open New Requisition'}
         </button>
       </div>
+
+      {isAtLimit && configured && (
+        <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-4">
+          <i className="fa-solid fa-triangle-exclamation text-amber-500"></i>
+          <p className="text-xs font-bold text-amber-800">
+            Your <span className="uppercase">{plan}</span> plan includes {jobLimit} active requisition{jobLimit > 1 ? 's' : ''}.
+            Upgrade to Pro or Agency to unlock more.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {jobs.map(job => (
           <div key={job.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-all group relative">
             <div className="flex justify-between items-start mb-4">
-              <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded tracking-wide ${
-                job.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-400'
+              <span className={`px-2 py-1 text-[10px] font-black uppercase rounded tracking-wide ${
+                job.status === 'active' ? 'bg-green-50 text-green-600' :
+                job.status === 'filled' ? 'bg-indigo-50 text-indigo-600' :
+                'bg-slate-100 text-slate-400'
               }`}>
                 {job.status}
               </span>
-              <div className="flex gap-1">
-                <button 
-                  onClick={() => setEditingJob(job)}
-                  className="h-7 w-7 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center justify-center transition-all md:opacity-0 md:group-hover:opacity-100"
-                >
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => setEditingJob(job)}
+                  className="h-7 w-7 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg flex items-center justify-center transition-all">
                   <i className="fa-solid fa-pen text-[10px]"></i>
                 </button>
-                <button 
-                  onClick={() => handleDelete(job.id)}
-                  className="h-7 w-7 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg flex items-center justify-center transition-all md:opacity-0 md:group-hover:opacity-100"
-                >
+                <button onClick={() => handleDelete(job.id)}
+                  className="h-7 w-7 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg flex items-center justify-center transition-all">
                   <i className="fa-solid fa-trash text-[10px]"></i>
                 </button>
               </div>
             </div>
-            <h3 className="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">{job.title}</h3>
-            <p className="text-slate-500 text-sm mb-4">{job.client}</p>
-            
-            <div className="space-y-3 pt-4 border-t border-slate-50">
+            <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight group-hover:text-indigo-600 transition-colors leading-tight mb-1">
+              {job.title}
+            </h3>
+            <p className="text-slate-500 text-sm mb-4 font-medium">{job.client}</p>
+            <div className="space-y-2 pt-4 border-t border-slate-50">
               <div className="flex items-center gap-2 text-slate-400 text-xs">
-                <i className="fa-solid fa-dollar-sign w-4 text-center"></i>
-                <span>{job.salary}</span>
+                <i className="fa-solid fa-dollar-sign w-4 text-center text-indigo-400"></i>
+                <span className="font-medium">{job.salary}</span>
               </div>
               {job.location && (
                 <div className="flex items-center gap-2 text-slate-400 text-xs">
-                  <i className="fa-solid fa-location-dot w-4 text-center"></i>
-                  <span>{job.location}</span>
+                  <i className="fa-solid fa-location-dot w-4 text-center text-indigo-400"></i>
+                  <span className="font-medium">{job.location}</span>
                 </div>
               )}
               <div className="flex items-center gap-2 text-slate-400 text-xs">
-                <i className="fa-solid fa-calendar w-4 text-center"></i>
-                <span>Posted {new Date(job.createdAt || Date.now()).toLocaleDateString()}</span>
+                <i className="fa-solid fa-calendar w-4 text-center text-indigo-400"></i>
+                <span className="font-medium">Posted {new Date(job.createdAt || Date.now()).toLocaleDateString()}</span>
               </div>
             </div>
-
-            <button 
+            <button
               onClick={() => onManageCandidates?.(job.id)}
-              className="w-full mt-6 py-2 border border-slate-200 rounded-lg text-slate-600 text-sm font-semibold hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
+              className="w-full mt-5 py-2.5 border border-slate-200 rounded-xl text-slate-600 text-xs font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
             >
-              Manage Candidates
+              Manage Candidates →
             </button>
           </div>
         ))}
         {jobs.length === 0 && (
-          <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-200 rounded-3xl">
+          <div className="col-span-full py-24 text-center border-2 border-dashed border-slate-200 rounded-3xl">
             <i className="fa-solid fa-folder-open text-4xl text-slate-200 mb-4 block"></i>
-            <p className="text-slate-400 font-medium">No active hiring requisitions found.</p>
+            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No active hiring requisitions</p>
+            <p className="text-slate-300 text-xs mt-1">Click "Open New Requisition" to get started.</p>
           </div>
         )}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[250] p-4">
-          <div className="bg-white w-full max-w-lg p-8 rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white w-full max-w-lg p-8 rounded-[2rem] shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">{editingJob ? 'Refine Requisition' : 'Open New Requisition'}</h3>
-              <button onClick={closeModal} className="text-slate-400 hover:text-slate-600">
+              <h3 className="text-xl font-black uppercase tracking-tighter">
+                {editingJob ? 'Edit Requisition' : 'Open New Requisition'}
+              </h3>
+              <button onClick={closeModal} className="text-slate-300 hover:text-slate-600 transition-colors">
                 <i className="fa-solid fa-times text-xl"></i>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Role Title</label>
-                <input 
-                  required
-                  className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Role Title *</label>
+                <input required
+                  className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
                   placeholder="e.g. Senior Product Manager"
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                />
+                  value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Client / Company</label>
-                  <input 
-                    required
-                    className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. TechCorp Inc."
-                    value={formData.client}
-                    onChange={e => setFormData({...formData, client: e.target.value})}
-                  />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Client *</label>
+                  <input required
+                    className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                    placeholder="TechCorp Inc."
+                    value={formData.client} onChange={e => setFormData({ ...formData, client: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Location / Remote</label>
-                  <input 
-                    required
-                    className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. London / Hybrid"
-                    value={formData.location}
-                    onChange={e => setFormData({...formData, location: e.target.value})}
-                  />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Location</label>
+                  <input
+                    className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                    placeholder="London / Hybrid"
+                    value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Salary Range / Budget</label>
-                <input 
-                  required
-                  className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g. £80,000 - £110,000"
-                  value={formData.salary}
-                  onChange={e => setFormData({...formData, salary: e.target.value})}
-                />
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Salary Range *</label>
+                <input required
+                  className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                  placeholder="$80,000 - $110,000"
+                  value={formData.salary} onChange={e => setFormData({ ...formData, salary: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Job Description</label>
-                <textarea 
-                  required
-                  rows={4}
-                  className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                  placeholder="Paste the role requirements and responsibilities here..."
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                />
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Job Description *</label>
+                <textarea required rows={4}
+                  className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium resize-none"
+                  placeholder="Paste role requirements and responsibilities..."
+                  value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
               </div>
-              <div className="flex gap-4 pt-4">
-                <button 
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 py-3 px-4 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-colors"
-                >
+              <div className="flex gap-4 pt-2">
+                <button type="button" onClick={closeModal}
+                  className="flex-1 py-3.5 border border-slate-200 text-slate-500 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-colors">
                   Cancel
                 </button>
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50"
-                >
-                  {loading ? <i className="fa-solid fa-spinner fa-spin mr-2"></i> : (editingJob ? "Update Role" : "Post Requisition")}
+                <button type="submit" disabled={loading}
+                  className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-lg disabled:opacity-50">
+                  {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : (editingJob ? 'Update Role' : 'Post Requisition')}
                 </button>
               </div>
             </form>
