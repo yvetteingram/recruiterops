@@ -9,7 +9,6 @@ import SettingsView from './components/SettingsView';
 import AuthView from './components/AuthView';
 import LandingView from './components/LandingView';
 
-// ✅ Demo profile aligned with actual Supabase schema
 const DEMO_PROFILE: Profile = {
   id: 'demo-user',
   full_name: 'Solo Recruiter',
@@ -127,7 +126,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `RecruiterOps_pipeline_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `RecruiterOps_candidates_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
     addLog("Pipeline Exported", "Candidate data exported to CSV.", "user");
   }, [candidates, addLog]);
@@ -151,7 +150,6 @@ const App: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // ✅ Only fetch columns that actually exist in the profiles table
       const { data: profileData } = await supabase
         .from('profiles')
         .select('id, email, full_name, plan, subscription_status, trial_ends_at, gumroad_sale_id, created_at')
@@ -178,31 +176,21 @@ const App: React.FC = () => {
 
       if (jobsData) {
         setJobs(jobsData.map((j: any) => ({
-          id: j.id,
-          title: j.title,
-          client: j.client,
-          salary: j.salary,
-          location: j.location,
-          status: j.status,
-          description: j.description,
+          id: j.id, title: j.title, client: j.client,
+          salary: j.salary, location: j.location,
+          status: j.status, description: j.description,
           createdAt: j.created_at,
         })));
       }
 
       if (candidatesData) {
         setCandidates(candidatesData.map((c: any) => ({
-          id: c.id,
-          jobId: c.job_id,
-          name: c.name,
-          title: c.title,
-          company: c.company,
+          id: c.id, jobId: c.job_id, name: c.name,
+          title: c.title, company: c.company,
           linkedInUrl: c.linkedIn_url || '',
-          email: c.email,
-          phoneNumber: c.phoneNumber,
-          stage: c.stage,
-          outreachDraft: c.outreach_draft,
-          matchScore: c.match_score,
-          aiAnalysis: c.ai_analysis,
+          email: c.email, phoneNumber: c.phoneNumber,
+          stage: c.stage, outreachDraft: c.outreach_draft,
+          matchScore: c.match_score, aiAnalysis: c.ai_analysis,
           lastActivityAt: c.last_activity_at,
         })));
       }
@@ -216,29 +204,20 @@ const App: React.FC = () => {
   }, [configured, demoMode]);
 
   useEffect(() => {
-    if (!configured || !supabase || !supabase.auth) {
-      setLoading(false);
-      return;
-    }
+    if (!configured || !supabase || !supabase.auth) { setLoading(false); return; }
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) setLoading(false);
-    }).catch(e => {
-      console.error("Session error", e);
-      setLoading(false);
-    });
+    }).catch(e => { console.error("Session error", e); setLoading(false); });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (!session && !demoMode) {
         setLoading(false);
         initialFetchDone.current = false;
-        setProfile(null);
-        setJobs([]);
-        setCandidates([]);
+        setProfile(null); setJobs([]); setCandidates([]);
       }
     });
-
     return () => { if (subscription) subscription.unsubscribe(); };
   }, [configured, demoMode]);
 
@@ -246,7 +225,6 @@ const App: React.FC = () => {
     if ((session && configured) || demoMode) fetchData();
   }, [session, configured, demoMode, fetchData]);
 
-  // ✅ Subscription check using actual schema fields
   const isExpired = profile &&
     profile.subscription_status !== 'active' &&
     !(profile.subscription_status === 'trialing' && profile.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
@@ -313,13 +291,14 @@ const App: React.FC = () => {
       <main className={`flex-1 p-10 ml-64 overflow-y-auto ${isExpired && activeTab !== 'settings' ? 'pointer-events-none grayscale' : ''}`}>
         <header className="flex justify-between items-center mb-12">
           <div>
-            <h1 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Execution Accelerator</h1>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Ops Desk</h2>
+            {/* ✅ Updated header verbiage */}
+            <h1 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Recruiting Operations</h1>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Recruiter Desk</h2>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-end mr-4">
               <span className="text-xs font-black text-slate-900 uppercase">1 Placement / mo</span>
-              <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest">Velocity Target</span>
+              <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest">Placement Target</span>
             </div>
             <button
               onClick={() => setActiveTab('settings')}
@@ -331,13 +310,7 @@ const App: React.FC = () => {
         </header>
 
         {activeTab === 'dashboard' && (
-          <Dashboard
-            stats={stats}
-            jobs={jobs}
-            candidates={candidates}
-            logs={logs}
-            onStartNewSearch={() => setActiveTab('jobs')}
-          />
+          <Dashboard stats={stats} jobs={jobs} candidates={candidates} logs={logs} onStartNewSearch={() => setActiveTab('jobs')} />
         )}
         {activeTab === 'jobs' && (
           <JobsView

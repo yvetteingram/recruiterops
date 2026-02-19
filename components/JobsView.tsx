@@ -8,13 +8,12 @@ interface JobsViewProps {
   onUpdateJob?: (updatedJob: Job) => void;
   onDeleteJob?: (jobId: string) => void;
   onRefreshData?: () => void;
-  plan: Plan; // ✅ Uses unified Plan type
+  plan: Plan;
   onManageCandidates?: (jobId: string) => void;
   isForcingAdd?: boolean;
   onAddComplete?: () => void;
 }
 
-// ✅ Plan limits aligned with new plan names
 const PLAN_LIMITS: Record<Plan, number> = {
   starter: 1,
   pro: 10,
@@ -22,15 +21,8 @@ const PLAN_LIMITS: Record<Plan, number> = {
 };
 
 const JobsView: React.FC<JobsViewProps> = ({
-  jobs,
-  onAddJob,
-  onUpdateJob,
-  onDeleteJob,
-  onRefreshData,
-  plan,
-  onManageCandidates,
-  isForcingAdd,
-  onAddComplete,
+  jobs, onAddJob, onUpdateJob, onDeleteJob, onRefreshData,
+  plan, onManageCandidates, isForcingAdd, onAddComplete,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
@@ -51,10 +43,8 @@ const JobsView: React.FC<JobsViewProps> = ({
   useEffect(() => {
     if (editingJob) {
       setFormData({
-        title: editingJob.title,
-        client: editingJob.client,
-        salary: editingJob.salary,
-        location: editingJob.location || '',
+        title: editingJob.title, client: editingJob.client,
+        salary: editingJob.salary, location: editingJob.location || '',
         description: editingJob.description,
       });
       setShowModal(true);
@@ -65,7 +55,7 @@ const JobsView: React.FC<JobsViewProps> = ({
   const isAtLimit = !editingJob && jobs.length >= jobLimit;
 
   const handleDelete = async (jobId: string) => {
-    if (!confirm("Close this requisition? All associated candidate data will be archived.")) return;
+    if (!confirm("Close this job order? All associated candidate records will be archived.")) return;
     try {
       if (supabase && configured) {
         const { error } = await supabase.from('jobs').delete().eq('id', jobId);
@@ -73,27 +63,24 @@ const JobsView: React.FC<JobsViewProps> = ({
       }
       onDeleteJob?.(jobId);
     } catch (err) {
-      console.error("Error deleting requisition:", err);
-      alert("Failed to close requisition.");
+      console.error("Error closing job order:", err);
+      alert("Failed to close job order.");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingJob && isAtLimit && configured) {
-      alert(`Capacity reached for your ${plan} plan (${jobLimit} requisition${jobLimit > 1 ? 's' : ''}). Please upgrade to add more.`);
+      alert(`Job order limit reached for your ${plan} plan (${jobLimit} job order${jobLimit > 1 ? 's' : ''}). Please upgrade to add more.`);
       return;
     }
 
     setLoading(true);
     try {
       const jobDataToSave = {
-        title: formData.title,
-        client: formData.client,
-        salary: formData.salary,
-        location: formData.location,
-        status: 'active' as const,
-        description: formData.description,
+        title: formData.title, client: formData.client,
+        salary: formData.salary, location: formData.location,
+        status: 'active' as const, description: formData.description,
       };
 
       if (!configured || !supabase) {
@@ -101,12 +88,7 @@ const JobsView: React.FC<JobsViewProps> = ({
         if (editingJob) {
           onUpdateJob?.({ ...editingJob, ...jobDataToSave });
         } else {
-          onAddJob({
-            ...jobDataToSave,
-            id: Math.random().toString(36).substr(2, 9),
-            createdAt: new Date().toISOString(),
-            isDemo: true,
-          });
+          onAddJob({ ...jobDataToSave, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), isDemo: true });
         }
         closeModal();
         return;
@@ -116,23 +98,19 @@ const JobsView: React.FC<JobsViewProps> = ({
       if (!user) throw new Error("Authentication required.");
 
       if (editingJob) {
-        const { data, error } = await supabase.from('jobs')
-          .update(jobDataToSave).eq('id', editingJob.id).select();
+        const { data, error } = await supabase.from('jobs').update(jobDataToSave).eq('id', editingJob.id).select();
         if (error) throw error;
         if (data?.[0]) onUpdateJob?.({ ...editingJob, ...jobDataToSave });
       } else {
-        const { data, error } = await supabase.from('jobs')
-          .insert({ ...jobDataToSave, user_id: user.id }).select();
+        const { data, error } = await supabase.from('jobs').insert({ ...jobDataToSave, user_id: user.id }).select();
         if (error) throw error;
         if (data?.[0]) {
           onAddJob({ id: data[0].id, ...jobDataToSave, createdAt: data[0].created_at });
-        } else {
-          onRefreshData?.();
-        }
+        } else { onRefreshData?.(); }
       }
       closeModal();
     } catch (err: any) {
-      console.error("Error saving requisition:", err);
+      console.error("Error saving job order:", err);
       alert(`Failed to save. ${err.message}`);
     } finally {
       setLoading(false);
@@ -149,10 +127,11 @@ const JobsView: React.FC<JobsViewProps> = ({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
+          {/* ✅ Updated header */}
           <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
-            Active Requisitions ({jobs.length}/{jobLimit === 1000 ? '∞' : jobLimit})
+            Job Orders ({jobs.length}/{jobLimit === 1000 ? '∞' : jobLimit})
           </h2>
-          <p className="text-xs text-slate-500">Open hiring roles currently under AI management.</p>
+          <p className="text-xs text-slate-500">Active job orders currently being worked.</p>
         </div>
         <button
           onClick={() => { setEditingJob(null); setShowModal(true); }}
@@ -164,7 +143,8 @@ const JobsView: React.FC<JobsViewProps> = ({
           }`}
         >
           {isAtLimit && configured ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-plus"></i>}
-          {isAtLimit && configured ? 'Capacity Reached' : 'Open New Requisition'}
+          {/* ✅ Updated button label */}
+          {isAtLimit && configured ? 'Limit Reached' : 'Add Job Order'}
         </button>
       </div>
 
@@ -172,8 +152,8 @@ const JobsView: React.FC<JobsViewProps> = ({
         <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-4">
           <i className="fa-solid fa-triangle-exclamation text-amber-500"></i>
           <p className="text-xs font-bold text-amber-800">
-            Your <span className="uppercase">{plan}</span> plan includes {jobLimit} active requisition{jobLimit > 1 ? 's' : ''}.
-            Upgrade to Pro or Agency to unlock more.
+            Your <span className="uppercase">{plan}</span> plan includes {jobLimit} active job order{jobLimit > 1 ? 's' : ''}.
+            Upgrade to Pro or Agency to manage more.
           </p>
         </div>
       )}
@@ -187,7 +167,7 @@ const JobsView: React.FC<JobsViewProps> = ({
                 job.status === 'filled' ? 'bg-indigo-50 text-indigo-600' :
                 'bg-slate-100 text-slate-400'
               }`}>
-                {job.status}
+                {job.status === 'filled' ? 'Filled' : job.status === 'paused' ? 'On Hold' : 'Active'}
               </span>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={() => setEditingJob(job)}
@@ -203,7 +183,8 @@ const JobsView: React.FC<JobsViewProps> = ({
             <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight group-hover:text-indigo-600 transition-colors leading-tight mb-1">
               {job.title}
             </h3>
-            <p className="text-slate-500 text-sm mb-4 font-medium">{job.client}</p>
+            {/* ✅ Client label — correct recruiting term */}
+            <p className="text-slate-500 text-sm mb-4 font-medium">Client: {job.client}</p>
             <div className="space-y-2 pt-4 border-t border-slate-50">
               <div className="flex items-center gap-2 text-slate-400 text-xs">
                 <i className="fa-solid fa-dollar-sign w-4 text-center text-indigo-400"></i>
@@ -217,32 +198,34 @@ const JobsView: React.FC<JobsViewProps> = ({
               )}
               <div className="flex items-center gap-2 text-slate-400 text-xs">
                 <i className="fa-solid fa-calendar w-4 text-center text-indigo-400"></i>
-                <span className="font-medium">Posted {new Date(job.createdAt || Date.now()).toLocaleDateString()}</span>
+                <span className="font-medium">Opened {new Date(job.createdAt || Date.now()).toLocaleDateString()}</span>
               </div>
             </div>
             <button
               onClick={() => onManageCandidates?.(job.id)}
               className="w-full mt-5 py-2.5 border border-slate-200 rounded-xl text-slate-600 text-xs font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
             >
-              Manage Candidates →
+              {/* ✅ Updated button label */}
+              View Candidates →
             </button>
           </div>
         ))}
         {jobs.length === 0 && (
           <div className="col-span-full py-24 text-center border-2 border-dashed border-slate-200 rounded-3xl">
             <i className="fa-solid fa-folder-open text-4xl text-slate-200 mb-4 block"></i>
-            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No active hiring requisitions</p>
-            <p className="text-slate-300 text-xs mt-1">Click "Open New Requisition" to get started.</p>
+            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No active job orders</p>
+            <p className="text-slate-300 text-xs mt-1">Click "Add Job Order" to get started.</p>
           </div>
         )}
       </div>
 
+      {/* ✅ Modal — updated all labels */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[250] p-4">
           <div className="bg-white w-full max-w-lg p-8 rounded-[2rem] shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-black uppercase tracking-tighter">
-                {editingJob ? 'Edit Requisition' : 'Open New Requisition'}
+                {editingJob ? 'Edit Job Order' : 'Add Job Order'}
               </h3>
               <button onClick={closeModal} className="text-slate-300 hover:text-slate-600 transition-colors">
                 <i className="fa-solid fa-times text-xl"></i>
@@ -250,7 +233,7 @@ const JobsView: React.FC<JobsViewProps> = ({
             </div>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Role Title *</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Job Title *</label>
                 <input required
                   className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
                   placeholder="e.g. Senior Product Manager"
@@ -258,17 +241,17 @@ const JobsView: React.FC<JobsViewProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Client *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Client Name *</label>
                   <input required
                     className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
-                    placeholder="TechCorp Inc."
+                    placeholder="e.g. TechCorp Inc."
                     value={formData.client} onChange={e => setFormData({ ...formData, client: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Location</label>
                   <input
                     className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
-                    placeholder="London / Hybrid"
+                    placeholder="e.g. Remote / Hybrid"
                     value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} />
                 </div>
               </div>
@@ -276,14 +259,14 @@ const JobsView: React.FC<JobsViewProps> = ({
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Salary Range *</label>
                 <input required
                   className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
-                  placeholder="$80,000 - $110,000"
+                  placeholder="e.g. $80,000 - $110,000"
                   value={formData.salary} onChange={e => setFormData({ ...formData, salary: e.target.value })} />
               </div>
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Job Description *</label>
                 <textarea required rows={4}
                   className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium resize-none"
-                  placeholder="Paste role requirements and responsibilities..."
+                  placeholder="Paste the job requirements and responsibilities..."
                   value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
               </div>
               <div className="flex gap-4 pt-2">
@@ -293,7 +276,7 @@ const JobsView: React.FC<JobsViewProps> = ({
                 </button>
                 <button type="submit" disabled={loading}
                   className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-lg disabled:opacity-50">
-                  {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : (editingJob ? 'Update Role' : 'Post Requisition')}
+                  {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : (editingJob ? 'Update Job Order' : 'Save Job Order')}
                 </button>
               </div>
             </form>

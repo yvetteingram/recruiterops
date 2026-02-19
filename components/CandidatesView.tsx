@@ -25,14 +25,8 @@ const STAGE_COLORS: Record<CandidateStage, string> = {
 };
 
 const CandidatesView: React.FC<CandidatesViewProps> = ({
-  candidates,
-  jobs,
-  profile,
-  onUpdateCandidate,
-  onAddCandidate,
-  onLog,
-  filterJobId,
-  onClearFilter,
+  candidates, jobs, profile, onUpdateCandidate,
+  onAddCandidate, onLog, filterJobId, onClearFilter,
 }) => {
   const [isScheduling, setIsScheduling] = useState<string | null>(null);
   const [isDrafting, setIsDrafting] = useState<string | null>(null);
@@ -51,20 +45,6 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
     : candidates;
 
   const filterJob = filterJobId ? jobs.find(j => j.id === filterJobId) : null;
-
-  const triggerWebhook = async (url: string | undefined, data: any) => {
-    if (!url) return;
-    try {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      onLog?.("CRM Sync Triggered", "Operational data pushed to external endpoint.", "system");
-    } catch (e) {
-      console.error("Webhook failure:", e);
-    }
-  };
 
   const handleDraftOutreach = async (candidate: Candidate) => {
     setIsDrafting(candidate.id);
@@ -85,7 +65,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
           .eq('id', candidate.id);
       }
       onUpdateCandidate(updated);
-      onLog?.("Follow-up Drafted", `AI prepared a nudge for ${candidate.name}.`, "ai");
+      onLog?.("Follow-up Drafted", `AI drafted a follow-up message for ${candidate.name}.`, "ai");
       setExpandedDraft(candidate.id);
     }
     setIsDrafting(null);
@@ -101,13 +81,12 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
       candidate.email || 'not-provided@email.com',
       candidate.phoneNumber || 'not-provided',
       job.title,
-      // ✅ Uses correct profile field name
       profile?.full_name || 'Senior Recruiter'
     );
 
     if (invite) {
       setShowScheduleModal({ candidate, invite });
-      onLog?.("Interview Coordination Initialized", `Agent formulated scheduling for ${candidate.name}.`, "ai");
+      onLog?.("Interview Scheduling Started", `AI prepared interview details for ${candidate.name}.`, "ai");
     }
     setIsScheduling(null);
   };
@@ -116,7 +95,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
     if (!showScheduleModal) return;
     const { candidate, invite } = showScheduleModal;
 
-    onLog?.("Dispatching Invite", `Calendar coordination sent for ${candidate.name}.`, "user");
+    onLog?.("Interview Confirmed", `Interview scheduled for ${candidate.name}.`, "user");
 
     const updated = { ...candidate, stage: CandidateStage.INTERVIEWING };
     if (supabase && !candidate.isDemo) {
@@ -141,7 +120,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
 
   const handleAddCandidateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCandidateForm.jobId) return alert("Select an active requisition for this candidate.");
+    if (!newCandidateForm.jobId) return alert("Please select a job order for this candidate.");
 
     try {
       const payload = {
@@ -192,7 +171,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
         setNewCandidateForm({ name: '', title: '', company: '', jobId: filterJobId || '', linkedInUrl: '', email: '', phoneNumber: '' });
       }
     } catch (err) {
-      alert("Failed to append candidate to pipeline.");
+      alert("Failed to add candidate to pipeline.");
     }
   };
 
@@ -205,8 +184,9 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
             <div className="p-10 border-b border-slate-50 bg-indigo-50/30 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Interview Coordination</h3>
-                <p className="text-[9px] text-indigo-500 font-black uppercase tracking-widest">Pre-Screen Scheduling</p>
+                {/* ✅ Updated modal title */}
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Schedule Interview</h3>
+                <p className="text-[9px] text-indigo-500 font-black uppercase tracking-widest">AI-Generated Interview Invite</p>
               </div>
               <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
                 <i className="fa-solid fa-calendar-check"></i>
@@ -214,7 +194,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
             </div>
             <div className="p-10 space-y-8">
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                <h4 className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Proposed Invite</h4>
+                <h4 className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Interview Invite Draft</h4>
                 <p className="text-sm font-black text-slate-900 mb-2">{showScheduleModal.invite.subject}</p>
                 <p className="text-[10px] text-slate-500 leading-relaxed font-medium mb-4">{showScheduleModal.invite.description}</p>
                 <span className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-widest">
@@ -226,7 +206,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
                 {[
                   { label: 'Candidate', value: showScheduleModal.candidate.name },
                   { label: 'Email', value: showScheduleModal.candidate.email || 'N/A' },
-                  { label: 'Mobile', value: showScheduleModal.candidate.phoneNumber || 'N/A' },
+                  { label: 'Phone', value: showScheduleModal.candidate.phoneNumber || 'N/A' },
                 ].map((row, i) => (
                   <div key={i} className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                     <span className="text-slate-400">{row.label}</span>
@@ -236,7 +216,9 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
               </div>
               <div className="flex gap-4">
                 <button onClick={() => setShowScheduleModal(null)} className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase text-[10px] tracking-widest">Cancel</button>
-                <button onClick={finalizeSchedule} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl">Confirm & Dispatch</button>
+                <button onClick={finalizeSchedule} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl">
+                  Confirm Interview
+                </button>
               </div>
             </div>
           </div>
@@ -246,12 +228,13 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
       {/* Header */}
       <div className="flex justify-between items-end">
         <div>
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1.5">Recruiter Workspace</h3>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Talent Pipeline</h2>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1.5">Recruiting Workspace</h3>
+          {/* ✅ Updated page title */}
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Candidate Pipeline</h2>
           {filterJob && (
             <div className="flex items-center gap-3 mt-2">
               <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                Filtered: {filterJob.title}
+                Job Order: {filterJob.title} — {filterJob.client}
               </span>
               <button onClick={onClearFilter} className="text-[10px] text-slate-400 hover:text-slate-600 font-bold uppercase tracking-widest">
                 Clear ×
@@ -264,7 +247,8 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
           className="bg-slate-900 text-white px-10 py-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-2xl transition-all active:scale-95 flex items-center gap-3"
         >
           <i className="fa-solid fa-plus text-xs"></i>
-          Ingest Candidate
+          {/* ✅ Updated button label */}
+          Add Candidate
         </button>
       </div>
 
@@ -274,10 +258,10 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
           <thead className="bg-slate-50/50 border-b border-slate-100">
             <tr>
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidate</th>
-              <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Requisition</th>
+              <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Job Order</th>
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Stage</th>
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Last Activity</th>
-              <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ops Tools</th>
+              <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -296,9 +280,14 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
                     </div>
                   </td>
                   <td className="px-8 py-6">
-                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-wide">
-                      {jobs.find(j => j.id === candidate.jobId)?.title || '—'}
-                    </span>
+                    <div>
+                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-wide">
+                        {jobs.find(j => j.id === candidate.jobId)?.title || '—'}
+                      </span>
+                      <div className="text-[9px] text-slate-400 font-bold mt-0.5">
+                        {jobs.find(j => j.id === candidate.jobId)?.client || ''}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-8 py-6">
                     <select
@@ -323,7 +312,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
                       <button
                         onClick={() => handleDraftOutreach(candidate)}
                         disabled={isDrafting === candidate.id}
-                        title="Draft Outreach"
+                        title="Draft Follow-Up"
                         className={`h-10 w-10 rounded-xl flex items-center justify-center border transition-all ${
                           isDrafting === candidate.id
                             ? 'bg-amber-500 text-white border-amber-500 animate-pulse'
@@ -347,7 +336,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
                       {candidate.outreachDraft && (
                         <button
                           onClick={() => setExpandedDraft(expandedDraft === candidate.id ? null : candidate.id)}
-                          title="View Draft"
+                          title="View Follow-Up Draft"
                           className="h-10 w-10 rounded-xl flex items-center justify-center border bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600 shadow-sm transition-all"
                         >
                           <i className={`fa-solid ${expandedDraft === candidate.id ? 'fa-chevron-up' : 'fa-envelope-open'} text-xs`}></i>
@@ -360,7 +349,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
                   <tr>
                     <td colSpan={5} className="px-8 pb-6 pt-0">
                       <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6">
-                        <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-3">AI Outreach Draft</p>
+                        <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-3">AI Follow-Up Draft</p>
                         <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">{candidate.outreachDraft}</p>
                       </div>
                     </td>
@@ -373,7 +362,8 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
         {displayedCandidates.length === 0 && (
           <div className="py-24 text-center">
             <i className="fa-solid fa-user-group text-4xl text-slate-200 mb-4 block"></i>
-            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">No Active Talent Profiles</p>
+            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">No candidates in pipeline</p>
+            <p className="text-slate-300 text-xs mt-1">Click "Add Candidate" to get started.</p>
           </div>
         )}
       </div>
@@ -383,7 +373,8 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
             <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
-              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">New Candidate Entry</h3>
+              {/* ✅ Updated modal title */}
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Add Candidate</h3>
               <button onClick={() => setShowAddModal(false)} className="h-10 w-10 flex items-center justify-center text-slate-300 hover:text-slate-900 transition-colors">
                 <i className="fa-solid fa-times text-xl"></i>
               </button>
@@ -391,18 +382,18 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
             <form onSubmit={handleAddCandidateSubmit} className="p-10 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Full Name *</label>
-                  <input required type="text" placeholder="Jane Doe"
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Candidate Name *</label>
+                  <input required type="text" placeholder="e.g. Jane Smith"
                     className="w-full bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all"
                     value={newCandidateForm.name} onChange={e => setNewCandidateForm({ ...newCandidateForm, name: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Assign to Requisition *</label>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Assign to Job Order *</label>
                   <select required
                     className="w-full bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all"
                     value={newCandidateForm.jobId} onChange={e => setNewCandidateForm({ ...newCandidateForm, jobId: e.target.value })}>
-                    <option value="">Select Pipeline</option>
-                    {jobs.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
+                    <option value="">Select Job Order</option>
+                    {jobs.map(j => <option key={j.id} value={j.id}>{j.title} — {j.client}</option>)}
                   </select>
                 </div>
                 <div>
@@ -412,7 +403,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
                     value={newCandidateForm.title} onChange={e => setNewCandidateForm({ ...newCandidateForm, title: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Current Company</label>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Current Employer</label>
                   <input type="text" placeholder="e.g. Acme Corp"
                     className="w-full bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all"
                     value={newCandidateForm.company} onChange={e => setNewCandidateForm({ ...newCandidateForm, company: e.target.value })} />
@@ -441,7 +432,8 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({
                   className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase text-[10px] tracking-widest">Cancel</button>
                 <button type="submit"
                   className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl">
-                  Submit to Pipeline
+                  {/* ✅ Updated submit button */}
+                  Add to Pipeline
                 </button>
               </div>
             </form>

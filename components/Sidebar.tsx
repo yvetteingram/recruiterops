@@ -5,7 +5,7 @@ interface SidebarProps {
   activeTab: 'dashboard' | 'jobs' | 'candidates' | 'settings';
   setActiveTab: (tab: 'dashboard' | 'jobs' | 'candidates' | 'settings') => void;
   jobCount: number;
-  plan: Plan; // ✅ Uses unified Plan type
+  plan: Plan;
   onLogout: () => void;
   dbConnected?: boolean;
 }
@@ -17,11 +17,12 @@ const PLAN_BADGE: Record<Plan, { label: string; color: string }> = {
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, plan, onLogout, dbConnected }) => {
+  // ✅ Updated nav labels to match recruiting terminology
   const menuItems = [
-    { id: 'dashboard' as const, label: 'Ops Dashboard', icon: 'fa-gauge-high' },
-    { id: 'jobs' as const, label: 'Hiring Reqs', icon: 'fa-briefcase' },
-    { id: 'candidates' as const, label: 'Candidate Pipeline', icon: 'fa-user-group' },
-    { id: 'settings' as const, label: 'Recruiter Config', icon: 'fa-cog' },
+    { id: 'dashboard' as const, label: 'Dashboard', icon: 'fa-gauge-high' },
+    { id: 'jobs' as const, label: 'Job Orders', icon: 'fa-briefcase' },
+    { id: 'candidates' as const, label: 'Candidates', icon: 'fa-user-group' },
+    { id: 'settings' as const, label: 'Settings', icon: 'fa-cog' },
   ];
 
   const badge = PLAN_BADGE[plan] || PLAN_BADGE['starter'];
@@ -80,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, pl
         {dbConnected && (
           <div className="flex items-center gap-2 px-4">
             <span className="h-1.5 w-1.5 bg-green-400 rounded-full"></span>
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">DB Connected</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Connected</span>
           </div>
         )}
         <button
