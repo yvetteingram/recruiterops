@@ -1,128 +1,112 @@
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 
-// ─── Supabase Admin Client (bypasses RLS) ───────────────────
-// Uses the SERVICE ROLE key, not the anon key
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export const handler: Handler = async (event) => {
-  // Only accept POST requests from Gumroad
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing environment variables');
+    return { statusCode: 500, body: JSON.stringify({ error: 'Missing environment variables' }) };
+  }
+
   try {
-    // ─── Parse Gumroad webhook payload ───────────────────────
-    // Gumroad sends data as application/x-www-form-urlencoded
     const params = new URLSearchParams(event.body || '');
+    const allParams: Record<string, string> = {};
+    params.forEach((value, key) => { allParams[key] = value; });
 
-    const saleId        = params.get('sale_id');
-    const email         = params.get('email');
-    const productName   = params.get('product_name');
-    const refunded      = params.get('refunded') === 'true';
-    const chargebacked  = params.get('chargebacked') === 'true';
-    const cancelled     = params.get('cancelled') === 'true';
+    const saleId      = params.get('sale_id');
+    const email       = params.get('email');
+    const productName = params.get('product_name');
+    const refunded    = params.get('refunded') === 'true';
+    const cancelled   = params.get('cancelled') === 'true';
 
-    console.log('Gumroad webhook received:', {
-      saleId, email, productName, refunded, chargebacked, cancelled
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    // ─── Validate required fields ─────────────────────────────
+    // Always log the webhook
+    await supabase.from('usage_logs').insert({
+      customer_id: null,
+      action: 'webhook_received',
+      metadata: { sale_id: saleId, email, product_name: productName, all_params: allParams },
+    });
+
     if (!email || !saleId) {
-      console.error('Missing required fields: email or sale_id');
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Missing email or sale_id' }),
-      };
+      return { statusCode: 200, body: JSON.stringify({ success: true, note: 'Ping logged' }) };
     }
 
-    // ─── Determine subscription status ───────────────────────
-    let subscription_status: string;
-    let plan = 'pro'; // default plan for new purchases
+    const subscription_status = (refunded || cancelled) ? 'cancelled' : 'active';
 
-    if (refunded || chargebacked || cancelled) {
-      subscription_status = 'cancelled';
-    } else {
-      subscription_status = 'active';
-    }
-
-    // ─── Check if user profile exists ────────────────────────
+    // Find existing profile
     const { data: existingProfile, error: fetchError } = await supabase
-      .from('profiles')
-      .select('id, email')
-      .eq('email', email)
-      .single();
+      .from('profiles').select('id, email').eq('email', email).single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      // PGRST116 = no rows found, which is fine for new users
-      console.error('Error fetching profile:', fetchError);
-      throw fetchError;
-    }
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
     if (existingProfile) {
-      // ─── Existing user — update their subscription ──────────
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          subscription_status,
-          gumroad_sale_id: saleId,
-          plan: subscription_status === 'active' ? plan : existingProfile['plan'],
-        })
+      // Update subscription status
+      await supabase.from('profiles')
+        .update({ subscription_status, gumroad_sale_id: saleId, plan: 'pro' })
         .eq('email', email);
 
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-        throw updateError;
-      }
+      if (subscription_status === 'cancelled') {
+        // Archive all jobs for this user
+        const { data: userJobs } = await supabase
+          .from('jobs')
+          .select('id')
+          .eq('user_id', existingProfile.id)
+          .is('archived_at', null);
 
-      console.log(`✅ Updated profile for ${email} → ${subscription_status}`);
-    } else {
-      // ─── New user — create a pending profile ─────────────────
-      // They'll complete signup via AuthView, this pre-seeds their record
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          email,
-          full_name: '',
-          plan,
-          subscription_status,
-          gumroad_sale_id: saleId,
+        if (userJobs && userJobs.length > 0) {
+          const jobIds = userJobs.map(j => j.id);
+
+          // Archive jobs
+          await supabase.from('jobs')
+            .update({ archived_at: new Date().toISOString() })
+            .in('id', jobIds);
+
+          // Archive candidates on those jobs
+          await supabase.from('candidates')
+            .update({ archived_at: new Date().toISOString() })
+            .in('job_id', jobIds);
+
+          console.log(`Archived ${jobIds.length} job orders for cancelled user ${email}`);
+        }
+
+        await supabase.from('usage_logs').insert({
+          customer_id: existingProfile.id,
+          action: 'subscription_cancelled',
+          metadata: { email, sale_id: saleId, jobs_archived: userJobs?.length || 0 },
         });
-
-      if (insertError) {
-        console.error('Error inserting profile:', insertError);
-        throw insertError;
+      } else {
+        await supabase.from('usage_logs').insert({
+          customer_id: existingProfile.id,
+          action: 'subscription_activated',
+          metadata: { email, sale_id: saleId },
+        });
       }
-
-      console.log(`✅ Pre-seeded profile for new user ${email}`);
+    } else {
+      // New buyer — pre-seed profile
+      await supabase.from('profiles').insert({
+        id: crypto.randomUUID(),
+        email,
+        full_name: '',
+        plan: 'pro',
+        subscription_status,
+        gumroad_sale_id: saleId,
+      });
+      console.log(`Pre-seeded profile for ${email}`);
     }
 
-    // ─── Log the event to usage_logs ─────────────────────────
-    await supabase.from('usage_logs').insert({
-      customer_id: existingProfile?.id || null,
-      action: subscription_status === 'active' ? 'subscription_activated' : 'subscription_cancelled',
-      metadata: {
-        sale_id: saleId,
-        email,
-        product_name: productName,
-        refunded,
-        cancelled,
-      },
-    });
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, status: subscription_status }),
-    };
+    return { statusCode: 200, body: JSON.stringify({ success: true, status: subscription_status }) };
 
   } catch (error: any) {
-    console.error('Gumroad webhook error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message || 'Internal server error' }),
-    };
+    console.error('Webhook error:', error);
+    return { statusCode: 500, body: JSON.stringify({ error: error.message || 'Internal server error' }) };
   }
 };
