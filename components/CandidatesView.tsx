@@ -43,15 +43,15 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
     const job = jobs.find(j => j.id === candidate.jobId);
     if (!job) return;
     
-    const outreach = await generateOutreach(candidate.name, candidate.title + ' at ' + candidate.company, job.title, profile?.aiPersona);
+    const outreach = await generateOutreach(candidate.name, candidate.title + ' at ' + candidate.company, job.title, undefined);
     if (outreach) {
       const updated = { ...candidate, outreachDraft: outreach };
       if (supabase && !candidate.isDemo) await supabase.from('candidates').update({ outreach_draft: outreach }).eq('id', candidate.id);
       onUpdateCandidate(updated);
       onLog?.("Follow-up Drafted", `AI Agent prepared a nudge for ${candidate.name}.`, "ai");
       
-      if (profile?.webhookOutreach) {
-        triggerWebhook(profile.webhookOutreach, { event: 'outreach_drafted', candidate: updated });
+      if (profile?.webhook_outreach) {
+        triggerWebhook(profile.webhook_outreach, { event: 'outreach_drafted', candidate: updated });
       }
     }
     setIsDrafting(null);
@@ -67,7 +67,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
       candidate.email || 'not-provided@email.com', 
       candidate.phoneNumber || 'not-provided', 
       job.title, 
-      profile?.fullName || 'Senior Recruiter'
+      profile?.full_name || 'Senior Recruiter'
     );
 
     if (invite) {
@@ -83,8 +83,8 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
     
     onLog?.("Dispatching Invite", `Calendar coordination request sent for ${candidate.name}.`, "user");
     
-    if (profile?.webhookCalendar) {
-      await triggerWebhook(profile.webhookCalendar, { 
+    if (profile?.webhook_calendar) {
+      await triggerWebhook(profile.webhook_calendar, { 
         event: 'schedule_prescreen', 
         candidate, 
         invite,
