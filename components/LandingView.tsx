@@ -5,6 +5,8 @@ interface LandingViewProps {
   onDemoMode: () => void;
 }
 
+const GUMROAD_URL = 'https://ketorahdigital.gumroad.com/l/kjsurs';
+
 const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) => {
   const faqs = [
     {
@@ -46,10 +48,22 @@ const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) =
           </div>
           
           <div className="flex items-center gap-6">
-            <button onClick={onGetStarted} className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Log In</button>
-            <button onClick={onGetStarted} className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-slate-200">
-              Get Started
+            {/* LOG IN → opens AuthView in login mode */}
+            <button
+              onClick={onGetStarted}
+              className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              Log In
             </button>
+            {/* GET STARTED → goes to Gumroad to pay first */}
+            <a
+              href={GUMROAD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-slate-200"
+            >
+              Get Started
+            </a>
           </div>
         </div>
       </nav>
@@ -67,15 +81,24 @@ const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) =
           <p className="text-lg md:text-xl text-slate-500 font-medium max-w-3xl mx-auto mb-12 leading-relaxed">
             Eliminate admin friction. Automated scheduling, stalled candidate detection, and daily execution summaries. No more dropped candidates.
           </p>
-          <div className="flex justify-center">
-            <button onClick={onGetStarted} className="w-full sm:w-auto px-16 py-6 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95">
-              Launch RecruiterOps — $49/mo
-            </button>
+          <div className="flex flex-col items-center gap-4">
+            {/* Hero CTA → goes to Gumroad */}
+            <a
+              href={GUMROAD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-16 py-6 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+            >
+              Get Started — $49/mo
+            </a>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              Pay once on Gumroad → sign up with the same email to activate access
+            </p>
           </div>
         </div>
       </section>
 
-      {/* App Visuals / Screenshots in action */}
+      {/* App Visuals */}
       <section className="py-20 bg-slate-50 border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -152,10 +175,26 @@ const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) =
       <section className="py-32 bg-slate-900 text-center">
          <div className="max-w-3xl mx-auto px-6">
             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase mb-6">Scale without hiring.</h2>
-            <p className="text-slate-400 mb-12 font-medium">Join boutique recruiters who are using RecruiterOps to drive placement velocity.</p>
-            <button onClick={onGetStarted} className="px-16 py-6 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-indigo-700 transition-all active:scale-95">
+            <p className="text-slate-400 mb-4 font-medium">Join boutique recruiters who are using RecruiterOps to drive placement velocity.</p>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-10">
+              Purchase on Gumroad → Sign up with the same email → Access activated instantly
+            </p>
+            <a
+              href={GUMROAD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-16 py-6 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl hover:bg-indigo-700 transition-all active:scale-95"
+            >
               Get Started Now — $49/mo
-            </button>
+            </a>
+            <div className="mt-8">
+              <button
+                onClick={onGetStarted}
+                className="text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+              >
+                Already a subscriber? Log In →
+              </button>
+            </div>
          </div>
       </section>
 
