@@ -15,20 +15,25 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [stalledCandidates, setStalledCandidates] = useState<any[]>([]);
+  const [lastBriefingTime, setLastBriefingTime] = useState<Date | null>(null);
+
+  const refreshBriefing = async () => {
+    if (loadingSummary) return;
+    setLoadingSummary(true);
+    const [aiSummary, stalled] = await Promise.all([
+      getDailySummary(jobs, candidates),
+      detectStalledCandidates(candidates)
+    ]);
+    setSummary(aiSummary);
+    setStalledCandidates(stalled);
+    setLastBriefingTime(new Date());
+    setLoadingSummary(false);
+  };
 
   useEffect(() => {
-    const fetchAILogic = async () => {
-      setLoadingSummary(true);
-      const [aiSummary, stalled] = await Promise.all([
-        getDailySummary(jobs, candidates),
-        detectStalledCandidates(candidates)
-      ]);
-      setSummary(aiSummary);
-      setStalledCandidates(stalled);
-      setLoadingSummary(false);
-    };
-    if (jobs.length > 0) fetchAILogic();
-  }, [jobs, candidates]);
+    if (jobs.length > 0) refreshBriefing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const funnelData = [
     { name: 'Sourced', value: candidates.filter(c => c.stage === CandidateStage.SOURCED).length },
@@ -137,19 +142,50 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
             </div>
           </div>
 
-          {/* ✅ AI status card — updated label */}
+          {/* Pipeline Health Widget */}
           <div className="bg-indigo-600 p-6 rounded-2xl shadow-lg shadow-indigo-100">
-            <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-2">AI Assistant Status</p>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></span>
-              <p className="text-xs font-bold text-white">Monitoring Your Desk</p>
+            <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-4">Pipeline Health</p>
+
+            <div className="space-y-3 mb-5">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">Active Candidates</span>
+                <span className="text-sm font-black text-white">{candidates.length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">Stalled</span>
+                <span className={`text-sm font-black ${stalledCandidates.length > 0 ? 'text-red-300' : 'text-green-300'}`}>
+                  {stalledCandidates.length}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">Interviews</span>
+                <span className="text-sm font-black text-white">
+                  {candidates.filter(c => c.stage === CandidateStage.INTERVIEWING).length}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">Last Briefing</span>
+                <span className="text-[10px] font-black text-indigo-200">
+                  {lastBriefingTime ? lastBriefingTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                </span>
+              </div>
             </div>
-            <p className="text-[10px] text-indigo-100 leading-relaxed mb-4">
-              Scanning your candidate pipeline for follow-up opportunities and scheduling bottlenecks.
-            </p>
-            <button className="w-full py-2 bg-white/20 text-white rounded-lg text-[10px] font-bold hover:bg-white/30 transition-colors uppercase tracking-widest">
-              Adjust AI Settings
-            </button>
+
+            <div className="pt-4 border-t border-white/20">
+              <div className="flex items-center gap-2 mb-4">
+                <span className={`h-2 w-2 rounded-full ${loadingSummary ? 'bg-amber-400 animate-pulse' : 'bg-green-400'}`}></span>
+                <p className="text-[10px] font-bold text-white uppercase tracking-widest">
+                  {loadingSummary ? 'Generating briefing...' : 'AI Ready'}
+                </p>
+              </div>
+              <button
+                onClick={refreshBriefing}
+                disabled={loadingSummary}
+                className="w-full py-2.5 bg-white/20 text-white rounded-xl text-[10px] font-black hover:bg-white/30 transition-colors uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+              >
+                {loadingSummary ? 'Refreshing...' : 'Refresh Briefing'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
