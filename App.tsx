@@ -152,7 +152,7 @@ const App: React.FC = () => {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('id, email, full_name, plan, subscription_status, trial_ends_at, gumroad_sale_id'
+        .select('id, email, full_name, plan, subscription_status, trial_ends_at, gumroad_sale_id')
         .eq('id', user.id)
         .single();
 
