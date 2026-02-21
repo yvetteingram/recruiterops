@@ -89,7 +89,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 </a>
               )}
               <a
-                href="https://app.gumroad.com/subscriptions"
+                href="https://app.gumroad.com/library"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[10px] text-slate-400 hover:text-red-500 font-black uppercase tracking-widest transition-colors"
