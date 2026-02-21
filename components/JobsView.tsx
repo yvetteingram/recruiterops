@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Job, Plan } from '../types';
+import { Job } from '../types';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 
 interface JobsViewProps {
