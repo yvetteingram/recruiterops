@@ -2,27 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Job } from '../types';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
 
+const JOB_LIMIT = 10; // Pro plan — single tier
+
 interface JobsViewProps {
   jobs: Job[];
   onAddJob: (newJob: Job) => void;
   onUpdateJob?: (updatedJob: Job) => void;
   onDeleteJob?: (jobId: string) => void;
   onRefreshData?: () => void;
-  plan: Plan;
   onManageCandidates?: (jobId: string) => void;
   isForcingAdd?: boolean;
   onAddComplete?: () => void;
 }
 
-const PLAN_LIMITS: Record<Plan, number> = {
-  starter: 1,
-  pro: 10,
-  agency: 1000,
-};
-
 const JobsView: React.FC<JobsViewProps> = ({
   jobs, onAddJob, onUpdateJob, onDeleteJob, onRefreshData,
-  plan, onManageCandidates, isForcingAdd, onAddComplete,
+  onManageCandidates, isForcingAdd, onAddComplete,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
@@ -30,6 +25,7 @@ const JobsView: React.FC<JobsViewProps> = ({
   const [loading, setLoading] = useState(false);
 
   const configured = isSupabaseConfigured();
+  const isAtLimit = !editingJob && jobs.length >= JOB_LIMIT;
 
   useEffect(() => {
     if (isForcingAdd) {
@@ -51,9 +47,6 @@ const JobsView: React.FC<JobsViewProps> = ({
     }
   }, [editingJob]);
 
-  const jobLimit = PLAN_LIMITS[plan] ?? 1;
-  const isAtLimit = !editingJob && jobs.length >= jobLimit;
-
   const handleDelete = async (jobId: string) => {
     if (!confirm("Close this job order? All associated candidate records will be archived.")) return;
     try {
@@ -70,8 +63,8 @@ const JobsView: React.FC<JobsViewProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingJob && isAtLimit && configured) {
-      alert(`Job order limit reached for your ${plan} plan (${jobLimit} job order${jobLimit > 1 ? 's' : ''}). Please upgrade to add more.`);
+    if (isAtLimit && configured) {
+      alert(`You've reached the limit of ${JOB_LIMIT} active job orders. Please close an existing order before adding a new one.`);
       return;
     }
 
@@ -127,9 +120,8 @@ const JobsView: React.FC<JobsViewProps> = ({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          {/* ✅ Updated header */}
           <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
-            Job Orders ({jobs.length}/{jobLimit === 1000 ? '∞' : jobLimit})
+            Job Orders ({jobs.length}/{JOB_LIMIT})
           </h2>
           <p className="text-xs text-slate-500">Active job orders currently being worked.</p>
         </div>
@@ -142,21 +134,10 @@ const JobsView: React.FC<JobsViewProps> = ({
               : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 active:scale-95'
           }`}
         >
-          {isAtLimit && configured ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-plus"></i>}
-          {/* ✅ Updated button label */}
+          <i className={`fa-solid ${isAtLimit && configured ? 'fa-lock' : 'fa-plus'}`}></i>
           {isAtLimit && configured ? 'Limit Reached' : 'Add Job Order'}
         </button>
       </div>
-
-      {isAtLimit && configured && (
-        <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-4">
-          <i className="fa-solid fa-triangle-exclamation text-amber-500"></i>
-          <p className="text-xs font-bold text-amber-800">
-            Your <span className="uppercase">{plan}</span> plan includes {jobLimit} active job order{jobLimit > 1 ? 's' : ''}.
-            Upgrade to Pro or Agency to manage more.
-          </p>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {jobs.map(job => (
@@ -183,7 +164,6 @@ const JobsView: React.FC<JobsViewProps> = ({
             <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight group-hover:text-indigo-600 transition-colors leading-tight mb-1">
               {job.title}
             </h3>
-            {/* ✅ Client label — correct recruiting term */}
             <p className="text-slate-500 text-sm mb-4 font-medium">Client: {job.client}</p>
             <div className="space-y-2 pt-4 border-t border-slate-50">
               <div className="flex items-center gap-2 text-slate-400 text-xs">
@@ -205,7 +185,6 @@ const JobsView: React.FC<JobsViewProps> = ({
               onClick={() => onManageCandidates?.(job.id)}
               className="w-full mt-5 py-2.5 border border-slate-200 rounded-xl text-slate-600 text-xs font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all"
             >
-              {/* ✅ Updated button label */}
               View Candidates →
             </button>
           </div>
@@ -219,7 +198,6 @@ const JobsView: React.FC<JobsViewProps> = ({
         )}
       </div>
 
-      {/* ✅ Modal — updated all labels */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[250] p-4">
           <div className="bg-white w-full max-w-lg p-8 rounded-[2rem] shadow-2xl max-h-[90vh] overflow-y-auto">

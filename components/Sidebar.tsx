@@ -1,23 +1,14 @@
 import React from 'react';
-import { Plan } from '../types';
 
 interface SidebarProps {
   activeTab: 'dashboard' | 'jobs' | 'candidates' | 'settings';
   setActiveTab: (tab: 'dashboard' | 'jobs' | 'candidates' | 'settings') => void;
   jobCount: number;
-  plan: Plan;
   onLogout: () => void;
   dbConnected?: boolean;
 }
 
-const PLAN_BADGE: Record<Plan, { label: string; color: string }> = {
-  starter: { label: 'Starter', color: 'text-slate-400 bg-slate-100' },
-  pro: { label: 'Pro', color: 'text-indigo-600 bg-indigo-50' },
-  agency: { label: 'Agency', color: 'text-purple-600 bg-purple-50' },
-};
-
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, plan, onLogout, dbConnected }) => {
-  // ✅ Updated nav labels to match recruiting terminology
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, onLogout, dbConnected }) => {
   const menuItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: 'fa-gauge-high' },
     { id: 'jobs' as const, label: 'Job Orders', icon: 'fa-briefcase' },
@@ -25,12 +16,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, pl
     { id: 'settings' as const, label: 'Settings', icon: 'fa-cog' },
   ];
 
-  const badge = PLAN_BADGE[plan] || PLAN_BADGE['starter'];
-
   return (
     <aside className="w-64 bg-slate-50 border-r border-slate-100 flex flex-col fixed h-screen z-20 overflow-hidden">
       <div className="p-8">
-        {/* Logo */}
         <button onClick={() => setActiveTab('dashboard')} className="flex items-center gap-3 mb-10 w-full group">
           <div className="h-10 w-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl transition-all group-hover:scale-105 active:scale-95">
             <i className="fa-solid fa-bolt"></i>
@@ -38,19 +26,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, pl
           <span className="text-lg font-black tracking-tighter uppercase text-slate-900">RecruiterOps</span>
         </button>
 
-        {/* Plan Badge */}
-        <div className="mb-8">
-          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${badge.color}`}>
-            {badge.label} Plan
-          </span>
-          {!dbConnected && (
-            <span className="ml-2 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50">
-              Demo
-            </span>
-          )}
-        </div>
-
-        {/* Nav */}
         <nav className="space-y-1">
           {menuItems.map((item) => (
             <button
@@ -76,7 +51,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, pl
         </nav>
       </div>
 
-      {/* Footer */}
       <div className="mt-auto p-8 space-y-4 border-t border-slate-100">
         {dbConnected && (
           <div className="flex items-center gap-2 px-4">
