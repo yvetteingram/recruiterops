@@ -5,7 +5,7 @@ interface LandingViewProps {
   onDemoMode: () => void;
 }
 
-const GUMROAD_URL = 'https://ketorahdigital.gumroad.com/l/recruiterops';
+const GUMROAD_URL = 'https://ketorahdigital.gumroad.com/l/recruiteros';
 
 const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) => {
   const faqs = [
