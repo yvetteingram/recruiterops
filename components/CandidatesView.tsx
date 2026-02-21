@@ -130,7 +130,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
         setShowAddModal(false);
         setNewCandidateForm({ name: '', title: '', company: '', jobId: filterJobId || '', linkedInUrl: '', email: '', phoneNumber: '' });
       }
-    } catch (err) { alert("Failed to append candidate to pipeline."); }
+    } catch (err) { alert("Failed to add candidate to pipeline."); }
   };
 
   return (
@@ -190,7 +190,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
         </div>
         <button onClick={() => setShowAddModal(true)} className="bg-slate-900 text-white px-10 py-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-2xl shadow-slate-200 transition-all active:scale-95 flex items-center gap-3">
           <i className="fa-solid fa-plus text-xs"></i>
-          Ingest Candidate
+          Add Candidate
         </button>
       </div>
 
@@ -253,19 +253,19 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 border border-slate-100">
             <div className="p-10 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
-               <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">New Candidate Entry</h3>
+               <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Add Candidate</h3>
                <button onClick={() => setShowAddModal(false)} className="h-10 w-10 flex items-center justify-center text-slate-300 hover:text-slate-900 transition-colors active:scale-90"><i className="fa-solid fa-times text-xl"></i></button>
             </div>
             <form onSubmit={handleAddCandidateSubmit} className="p-10 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Legal Name</label>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Full Name</label>
                   <input required type="text" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all uppercase" placeholder="e.g. Jane Doe" value={newCandidateForm.name} onChange={e => setNewCandidateForm({...newCandidateForm, name: e.target.value})}/>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Assign to Requisition</label>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Job Order</label>
                   <select required className="w-full bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all" value={newCandidateForm.jobId} onChange={e => setNewCandidateForm({...newCandidateForm, jobId: e.target.value})}>
-                    <option value="">Select Pipeline</option>
+                    <option value="">Select Job Order</option>
                     {jobs.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
                   </select>
                 </div>

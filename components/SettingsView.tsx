@@ -17,8 +17,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   const [saving, setSaving] = useState(false);
   const [profileForm, setProfileForm] = useState({
     fullName: profile.full_name || '',
-    webhookOutreach: '',
-    webhookCalendar: '',
   });
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -82,7 +80,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="flex flex-col gap-3 items-end">
               {!isActive && (
                 <a
-                  href="https://ketorahdigital.gumroad.com/l/kjsurs"
+                  href="https://ketorahdigital.gumroad.com/l/recruiteros"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all"
@@ -131,34 +129,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 value={profile.email}
                 disabled
                 className="w-full bg-slate-100 border border-slate-100 rounded-xl px-5 py-4 text-xs font-bold text-slate-400 cursor-not-allowed"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Make.com Webhooks */}
-        <div className="space-y-6">
-          <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em]">Automation Webhooks (Make.com)</h3>
-          <p className="text-xs text-slate-500">Connect your Make.com scenarios to enable automated follow-ups and calendar scheduling.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-[9px] font-black uppercase text-slate-400 mb-2.5 tracking-widest">Follow-Up Outreach Webhook</label>
-              <input
-                type="url"
-                value={profileForm.webhookOutreach}
-                onChange={e => setProfileForm({ ...profileForm, webhookOutreach: e.target.value })}
-                placeholder="https://hook.make.com/..."
-                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-[10px] font-medium transition-all focus:outline-none focus:ring-1 focus:ring-slate-900"
-              />
-            </div>
-            <div>
-              <label className="block text-[9px] font-black uppercase text-slate-400 mb-2.5 tracking-widest">Calendar Scheduling Webhook</label>
-              <input
-                type="url"
-                value={profileForm.webhookCalendar}
-                onChange={e => setProfileForm({ ...profileForm, webhookCalendar: e.target.value })}
-                placeholder="https://hook.make.com/..."
-                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-[10px] font-medium transition-all focus:outline-none focus:ring-1 focus:ring-slate-900"
               />
             </div>
           </div>
