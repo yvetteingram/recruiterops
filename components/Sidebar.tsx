@@ -4,11 +4,12 @@ interface SidebarProps {
   activeTab: 'dashboard' | 'jobs' | 'candidates' | 'settings';
   setActiveTab: (tab: 'dashboard' | 'jobs' | 'candidates' | 'settings') => void;
   jobCount: number;
+  stalledCount?: number;
   onLogout: () => void;
   dbConnected?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, onLogout, dbConnected }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, stalledCount = 0, onLogout, dbConnected }) => {
   const menuItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: 'fa-gauge-high' },
     { id: 'jobs' as const, label: 'Job Orders', icon: 'fa-briefcase' },
@@ -44,6 +45,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, jobCount, on
                   activeTab === item.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {jobCount}
+                </span>
+              )}
+              {item.id === 'candidates' && stalledCount > 0 && (
+                <span className={`ml-auto text-[9px] font-black px-1.5 py-0.5 rounded-md ${
+                  activeTab === item.id ? 'bg-red-500 text-white' : 'bg-red-100 text-red-600'
+                }`}>
+                  {stalledCount}
                 </span>
               )}
             </button>

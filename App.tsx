@@ -248,13 +248,21 @@ const App: React.FC = () => {
     return <LandingView onGetStarted={() => setShowAuth(true)} onDemoMode={() => setDemoMode(true)} />;
   }
 
+  const STALL_DAYS = 3;
+  const stalledCandidates = candidates.filter(c => {
+    if (!c.lastActivityAt) return true;
+    const daysSince = (Date.now() - new Date(c.lastActivityAt).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince >= STALL_DAYS && c.stage !== CandidateStage.PRESENTED && c.stage !== CandidateStage.REJECTED;
+  });
+  const stalledCount = stalledCandidates.length;
+
   const stats = {
     totalJobs: jobs.length,
     activeCandidates: candidates.length,
     sessionsBooked: candidates.filter(c => c.stage === CandidateStage.INTERVIEWING).length,
     placements: candidates.filter(c => c.stage === CandidateStage.PRESENTED).length,
     timeSavedMinutes: candidates.length * 20,
-    stalledItemsCount: 0,
+    stalledItemsCount: stalledCount,
   };
 
   return (
@@ -283,6 +291,7 @@ const App: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={(tab) => { setActiveTab(tab); if (tab !== 'candidates') setSelectedJobId(null); }}
         jobCount={jobs.length}
+        stalledCount={stalledCount}
         onLogout={handleLogout}
         dbConnected={configured}
       />

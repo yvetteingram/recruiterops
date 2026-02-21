@@ -205,15 +205,30 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {displayedCandidates.map(candidate => (
-              <tr key={candidate.id} className="hover:bg-slate-50/20 transition-all group">
+            {displayedCandidates.map(candidate => {
+              const daysSinceActivity = candidate.lastActivityAt
+                ? Math.floor((Date.now() - new Date(candidate.lastActivityAt).getTime()) / (1000 * 60 * 60 * 24))
+                : null;
+              const isStalled = daysSinceActivity !== null && daysSinceActivity >= 3
+                && candidate.stage !== CandidateStage.PRESENTED
+                && candidate.stage !== CandidateStage.REJECTED;
+
+              return (
+              <tr key={candidate.id} className={`hover:bg-slate-50/20 transition-all group ${isStalled ? 'bg-red-50/40' : ''}`}>
                 <td className="px-10 py-7">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-900 font-black text-sm uppercase">
+                    <div className={`h-12 w-12 border rounded-2xl flex items-center justify-center text-slate-900 font-black text-sm uppercase ${isStalled ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100'}`}>
                       {candidate.name.charAt(0)}
                     </div>
                     <div>
-                      <div className="font-black text-slate-900 text-sm tracking-tight mb-1 uppercase">{candidate.name}</div>
+                      <div className="font-black text-slate-900 text-sm tracking-tight mb-1 uppercase flex items-center gap-2">
+                        {candidate.name}
+                        {isStalled && (
+                          <span className="text-[8px] font-black uppercase tracking-widest bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                            {daysSinceActivity}d stalled
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{candidate.company}</div>
                     </div>
                   </div>
@@ -243,7 +258,8 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         {displayedCandidates.length === 0 && <div className="py-32 text-center text-slate-300 font-black uppercase tracking-[0.4em] text-xs">No Active Talent Profiles</div>}
