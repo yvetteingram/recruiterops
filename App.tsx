@@ -152,7 +152,7 @@ const App: React.FC = () => {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('id, email, full_name, plan, subscription_status, trial_ends_at, gumroad_sale_id, created_at')
+        .select('id, email, full_name, plan, subscription_status, trial_ends_at, gumroad_sale_id'
         .eq('id', user.id)
         .single();
 
@@ -165,7 +165,7 @@ const App: React.FC = () => {
           subscription_status: profileData.subscription_status || 'active',
           trial_ends_at: profileData.trial_ends_at || null,
           gumroad_sale_id: profileData.gumroad_sale_id || null,
-          created_at: profileData.created_at,
+          
         });
       }
 
@@ -187,8 +187,8 @@ const App: React.FC = () => {
         setCandidates(candidatesData.map((c: any) => ({
           id: c.id, jobId: c.job_id, name: c.name,
           title: c.title, company: c.company,
-          linkedInUrl: c.linkedIn_url || '',
-          email: c.email, phoneNumber: c.phoneNumber,
+          linkedInUrl: c.linkedin_url || '',
+          email: c.email, phoneNumber: c.phone,
           stage: c.stage, outreachDraft: c.outreach_draft,
           matchScore: c.match_score, aiAnalysis: c.ai_analysis,
           lastActivityAt: c.last_activity_at,
@@ -283,7 +283,6 @@ const App: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={(tab) => { setActiveTab(tab); if (tab !== 'candidates') setSelectedJobId(null); }}
         jobCount={jobs.length}
-        plan={profile?.plan || 'starter'}
         onLogout={handleLogout}
         dbConnected={configured}
       />
@@ -318,7 +317,6 @@ const App: React.FC = () => {
             onAddJob={(j) => setJobs(p => [j, ...p])}
             onUpdateJob={(j) => setJobs(p => p.map(x => x.id === j.id ? j : x))}
             onDeleteJob={(id) => setJobs(p => p.filter(x => x.id !== id))}
-            plan={profile?.plan || 'starter'}
             onManageCandidates={(id) => { setSelectedJobId(id); setActiveTab('candidates'); }}
             isForcingAdd={isAddingJob}
             onAddComplete={() => setIsAddingJob(false)}
