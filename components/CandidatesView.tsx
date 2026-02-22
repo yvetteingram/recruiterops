@@ -19,6 +19,9 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
   const [isDrafting, setIsDrafting] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState<{ candidate: Candidate, invite: any } | null>(null);
+  const [showNotesModal, setShowNotesModal] = useState<Candidate | null>(null);
+  const [notesText, setNotesText] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const [newCandidateForm, setNewCandidateForm] = useState({ name: '', title: '', company: '', jobId: filterJobId || '', linkedInUrl: '', email: '', phoneNumber: '' });
 
@@ -131,6 +134,22 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
         setNewCandidateForm({ name: '', title: '', company: '', jobId: filterJobId || '', linkedInUrl: '', email: '', phoneNumber: '' });
       }
     } catch (err) { alert("Failed to add candidate to pipeline."); }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!showNotesModal) return;
+    setSavingNotes(true);
+    try {
+      if (supabase && !showNotesModal.isDemo) {
+        await supabase.from('candidates').update({ notes: notesText }).eq('id', showNotesModal.id);
+      }
+      onUpdateCandidate({ ...showNotesModal, notes: notesText });
+      setShowNotesModal(null);
+    } catch (err) {
+      alert('Failed to save notes.');
+    } finally {
+      setSavingNotes(false);
+    }
   };
 
   return (
@@ -249,10 +268,17 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                 </td>
                 <td className="px-10 py-7 text-right">
                   <div className="flex justify-end gap-3">
-                    <button onClick={() => handleDraftOutreach(candidate)} disabled={isDrafting === candidate.id} title="Draft Nudge" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isDrafting === candidate.id ? 'bg-amber-500 text-white animate-pulse border-amber-500' : 'bg-white border-slate-100 text-slate-900 hover:border-amber-600 hover:bg-slate-50 shadow-sm'}`}>
+                    <button
+                      onClick={() => { setShowNotesModal(candidate); setNotesText((candidate as any).notes || ''); }}
+                      title="Notes"
+                      className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 shadow-sm ${(candidate as any).notes ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-900'}`}
+                    >
+                      <i className="fa-solid fa-note-sticky text-xs"></i>
+                    </button>
+                    <button onClick={() => handleDraftOutreach(candidate)} disabled={isDrafting === candidate.id} title="Draft Outreach" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isDrafting === candidate.id ? 'bg-amber-500 text-white animate-pulse border-amber-500' : 'bg-white border-slate-100 text-slate-900 hover:border-amber-600 hover:bg-slate-50 shadow-sm'}`}>
                       <i className={`fa-solid ${isDrafting === candidate.id ? 'fa-spinner fa-spin' : 'fa-paper-plane'} text-xs`}></i>
                     </button>
-                    <button onClick={() => handleScheduleInterview(candidate)} disabled={isScheduling === candidate.id} title="Calendar Coordination" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isScheduling === candidate.id ? 'bg-indigo-500 text-white animate-pulse border-indigo-500' : 'bg-white border-slate-100 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-50 shadow-sm'}`}>
+                    <button onClick={() => handleScheduleInterview(candidate)} disabled={isScheduling === candidate.id} title="Schedule Interview" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isScheduling === candidate.id ? 'bg-indigo-500 text-white animate-pulse border-indigo-500' : 'bg-white border-slate-100 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-50 shadow-sm'}`}>
                       <i className={`fa-solid ${isScheduling === candidate.id ? 'fa-spinner fa-spin' : 'fa-calendar-plus'} text-xs`}></i>
                     </button>
                   </div>
@@ -301,6 +327,47 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                 <button type="submit" className="flex-1 py-5 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-all">Submit to Pipeline</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Notes Modal */}
+      {showNotesModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+            <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Notes</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{showNotesModal.name}</p>
+              </div>
+              <button onClick={() => setShowNotesModal(null)} className="h-10 w-10 flex items-center justify-center text-slate-300 hover:text-slate-900 transition-colors">
+                <i className="fa-solid fa-times text-xl"></i>
+              </button>
+            </div>
+            <div className="p-8 space-y-6">
+              <textarea
+                value={notesText}
+                onChange={e => setNotesText(e.target.value)}
+                placeholder="Add notes about this candidate — interview feedback, availability, compensation expectations, next steps..."
+                rows={6}
+                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all resize-none leading-relaxed"
+              />
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowNotesModal(null)}
+                  className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveNotes}
+                  disabled={savingNotes}
+                  className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {savingNotes ? 'Saving...' : 'Save Notes'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -52,6 +52,7 @@ export interface Candidate {
   archived_at?: string;
   isDemo?: boolean;
   lastActivityAt?: string;
+  notes?: string;
 }
 
 export interface Stats {

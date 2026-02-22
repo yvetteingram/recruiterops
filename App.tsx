@@ -192,6 +192,7 @@ const App: React.FC = () => {
           stage: c.stage, outreachDraft: c.outreach_draft,
           matchScore: c.match_score, aiAnalysis: c.ai_analysis,
           lastActivityAt: c.last_activity_at,
+          notes: c.notes,
         })));
       }
 
