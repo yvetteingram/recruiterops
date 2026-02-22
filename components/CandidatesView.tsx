@@ -253,10 +253,10 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
         <table className="w-full text-left">
           <thead className="bg-slate-50/50 border-b border-slate-100">
             <tr>
-              <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Applicant Profile</th>
-              <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Requisition</th>
+              <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidate</th>
+              <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Job Order</th>
               <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hiring Stage</th>
-              <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ops Tools</th>
+              <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
