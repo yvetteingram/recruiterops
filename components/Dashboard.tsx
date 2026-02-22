@@ -20,14 +20,19 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
   const refreshBriefing = async () => {
     if (loadingSummary) return;
     setLoadingSummary(true);
-    const [aiSummary, stalled] = await Promise.all([
-      getDailySummary(jobs, candidates),
-      detectStalledCandidates(candidates)
-    ]);
-    setSummary(aiSummary);
-    setStalledCandidates(stalled);
-    setLastBriefingTime(new Date());
-    setLoadingSummary(false);
+    try {
+      const aiSummary = await getDailySummary(jobs, candidates);
+      setSummary(aiSummary);
+      // Wait 5 seconds before second call to avoid rate limit
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      const stalled = await detectStalledCandidates(candidates);
+      setStalledCandidates(stalled);
+      setLastBriefingTime(new Date());
+    } catch (err) {
+      console.error('Briefing error:', err);
+    } finally {
+      setLoadingSummary(false);
+    }
   };
 
   useEffect(() => {
