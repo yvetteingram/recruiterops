@@ -5,6 +5,7 @@ export enum CandidateStage {
   SCREENED = 'Screened',
   INTERVIEWING = 'Client Interview',
   PRESENTED = 'Presented',
+  PLACED = 'Placed',
   REJECTED = 'Rejected'
 }
 
@@ -57,6 +58,8 @@ export interface Candidate {
   isDemo?: boolean;
   lastActivityAt?: string;
   notes?: string;
+  placed_at?: string;
+  placement_fee?: number;
 }
 
 export interface Stats {
@@ -64,6 +67,7 @@ export interface Stats {
   activeCandidates: number;
   sessionsBooked: number;
   placements: number;
+  totalFees: number;
   timeSavedMinutes: number;
   stalledItemsCount: number;
 }

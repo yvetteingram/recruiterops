@@ -52,8 +52,8 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
           { label: 'Open Job Orders', value: stats.totalJobs, icon: 'fa-briefcase', color: 'bg-blue-50 text-blue-600' },
           { label: 'Candidates in Pipeline', value: stats.activeCandidates, icon: 'fa-user-group', color: 'bg-indigo-50 text-indigo-600' },
           { label: 'Interviews Scheduled', value: stats.sessionsBooked, icon: 'fa-calendar-check', color: 'bg-green-50 text-green-600' },
-          { label: 'Admin Hours Saved', value: `${Math.round(stats.timeSavedMinutes / 60)}h`, icon: 'fa-clock', color: 'bg-amber-50 text-amber-600' },
-          { label: 'Candidates Stalled', value: stalledCandidates.length, icon: 'fa-circle-exclamation', color: stalledCandidates.length > 0 ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-400' },
+          { label: 'Placements', value: stats.placements, icon: 'fa-trophy', color: stats.placements > 0 ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400' },
+          { label: 'Fees Earned', value: stats.totalFees > 0 ? `$${stats.totalFees.toLocaleString()}` : '—', icon: 'fa-dollar-sign', color: stats.totalFees > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>

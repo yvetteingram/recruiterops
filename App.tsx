@@ -195,6 +195,8 @@ const App: React.FC = () => {
           matchScore: c.match_score, aiAnalysis: c.ai_analysis,
           lastActivityAt: c.last_activity_at,
           notes: c.notes,
+          placed_at: c.placed_at,
+          placement_fee: c.placement_fee,
         })));
       }
 
@@ -259,11 +261,15 @@ const App: React.FC = () => {
   });
   const stalledCount = stalledCandidates.length;
 
+  const placedCandidates = candidates.filter(c => c.stage === CandidateStage.PLACED);
+  const totalFees = placedCandidates.reduce((sum, c) => sum + (c.placement_fee || 0), 0);
+
   const stats = {
     totalJobs: jobs.length,
     activeCandidates: candidates.length,
     sessionsBooked: candidates.filter(c => c.stage === CandidateStage.INTERVIEWING).length,
-    placements: candidates.filter(c => c.stage === CandidateStage.PRESENTED).length,
+    placements: placedCandidates.length,
+    totalFees,
     timeSavedMinutes: candidates.length * 20,
     stalledItemsCount: stalledCount,
   };

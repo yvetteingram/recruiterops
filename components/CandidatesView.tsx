@@ -23,6 +23,9 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
   const [notesText, setNotesText] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showPlacementModal, setShowPlacementModal] = useState<Candidate | null>(null);
+  const [placementFee, setPlacementFee] = useState('');
+  const [savingPlacement, setSavingPlacement] = useState(false);
 
   const [newCandidateForm, setNewCandidateForm] = useState({ name: '', title: '', company: '', jobId: filterJobId || '', linkedInUrl: '', email: '', phoneNumber: '' });
 
@@ -161,6 +164,30 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
     });
   };
 
+  const handleMarkPlaced = async () => {
+    if (!showPlacementModal) return;
+    setSavingPlacement(true);
+    const fee = parseFloat(placementFee.replace(/[^0-9.]/g, '')) || 0;
+    const now = new Date().toISOString();
+    try {
+      if (supabase && !showPlacementModal.isDemo) {
+        await supabase.from('candidates').update({
+          stage: CandidateStage.PLACED,
+          placed_at: now,
+          placement_fee: fee,
+        }).eq('id', showPlacementModal.id);
+      }
+      onUpdateCandidate({ ...showPlacementModal, stage: CandidateStage.PLACED, placed_at: now, placement_fee: fee });
+      onLog?.('Placement Recorded', `${showPlacementModal.name} placed. Fee: $${fee.toLocaleString()}`, 'user');
+      setShowPlacementModal(null);
+      setPlacementFee('');
+    } catch (err) {
+      alert('Failed to record placement.');
+    } finally {
+      setSavingPlacement(false);
+    }
+  };
+
   return (
     <div className="space-y-10">
       {/* Schedule Modal */}
@@ -270,6 +297,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                   <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
                     candidate.stage === CandidateStage.SCREENED ? 'bg-indigo-600 text-white' : 
                     candidate.stage === CandidateStage.INTERVIEWING ? 'bg-slate-900 text-white' :
+                    candidate.stage === CandidateStage.PLACED ? 'bg-green-500 text-white' :
                     'bg-slate-50 text-slate-400'
                   }`}>
                     {candidate.stage}
@@ -299,6 +327,15 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                     <button onClick={() => handleScheduleInterview(candidate)} disabled={isScheduling === candidate.id} title="Schedule Interview" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isScheduling === candidate.id ? 'bg-indigo-500 text-white animate-pulse border-indigo-500' : 'bg-white border-slate-100 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-50 shadow-sm'}`}>
                       <i className={`fa-solid ${isScheduling === candidate.id ? 'fa-spinner fa-spin' : 'fa-calendar-plus'} text-xs`}></i>
                     </button>
+                    {candidate.stage !== CandidateStage.PLACED && (
+                      <button
+                        onClick={() => { setShowPlacementModal(candidate); setPlacementFee(''); }}
+                        title="Mark as Placed"
+                        className="h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 bg-white border-slate-100 text-green-600 hover:border-green-400 hover:bg-green-50 shadow-sm"
+                      >
+                        <i className="fa-solid fa-trophy text-xs"></i>
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -383,6 +420,56 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                   className="flex-1 py-4 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all disabled:opacity-50"
                 >
                   {savingNotes ? 'Saving...' : 'Save Notes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Placement Modal */}
+      {showPlacementModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+            <div className="p-8 border-b border-slate-50 bg-green-50/40">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Record Placement</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{showPlacementModal.name}</p>
+                </div>
+                <div className="h-12 w-12 bg-green-100 rounded-2xl flex items-center justify-center">
+                  <i className="fa-solid fa-trophy text-green-600"></i>
+                </div>
+              </div>
+            </div>
+            <div className="p-8 space-y-6">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-2.5 tracking-widest">Placement Fee</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm">$</span>
+                  <input
+                    type="text"
+                    value={placementFee}
+                    onChange={e => setPlacementFee(e.target.value)}
+                    placeholder="e.g. 18,000"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-8 pr-5 py-4 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-green-500 transition-all"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">Leave blank if fee is not yet confirmed.</p>
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowPlacementModal(null)}
+                  className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleMarkPlaced}
+                  disabled={savingPlacement}
+                  className="flex-1 py-4 bg-green-500 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-green-100 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {savingPlacement ? 'Saving...' : 'Confirm Placement'}
                 </button>
               </div>
             </div>
