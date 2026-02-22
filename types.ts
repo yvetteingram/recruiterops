@@ -35,6 +35,8 @@ export interface Job {
   description: string;
   createdAt: string;
   archived_at?: string;
+  contactName?: string;
+  contactEmail?: string;
   isDemo?: boolean;
 }
 
@@ -50,6 +52,8 @@ export interface Candidate {
   stage: CandidateStage;
   outreachDraft?: string;
   archived_at?: string;
+  contactName?: string;
+  contactEmail?: string;
   isDemo?: boolean;
   lastActivityAt?: string;
   notes?: string;

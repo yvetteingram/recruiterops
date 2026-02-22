@@ -180,6 +180,8 @@ const App: React.FC = () => {
           salary: j.salary, location: j.location,
           status: j.status, description: j.description,
           createdAt: j.created_at,
+          contactName: j.contact_name || '',
+          contactEmail: j.contact_email || '',
         })));
       }
 

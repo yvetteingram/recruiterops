@@ -21,7 +21,7 @@ const JobsView: React.FC<JobsViewProps> = ({
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [formData, setFormData] = useState({ title: '', client: '', salary: '', location: '', description: '' });
+  const [formData, setFormData] = useState({ title: '', client: '', salary: '', location: '', description: '', contactName: '', contactEmail: '' });
   const [loading, setLoading] = useState(false);
 
   const configured = isSupabaseConfigured();
@@ -30,7 +30,7 @@ const JobsView: React.FC<JobsViewProps> = ({
   useEffect(() => {
     if (isForcingAdd) {
       setEditingJob(null);
-      setFormData({ title: '', client: '', salary: '', location: '', description: '' });
+      setFormData({ title: '', client: '', salary: '', location: '', description: '', contactName: '', contactEmail: '' });
       setShowModal(true);
       onAddComplete?.();
     }
@@ -42,6 +42,8 @@ const JobsView: React.FC<JobsViewProps> = ({
         title: editingJob.title, client: editingJob.client,
         salary: editingJob.salary, location: editingJob.location || '',
         description: editingJob.description,
+        contactName: (editingJob as any).contactName || '',
+        contactEmail: (editingJob as any).contactEmail || '',
       });
       setShowModal(true);
     }
@@ -74,6 +76,8 @@ const JobsView: React.FC<JobsViewProps> = ({
         title: formData.title, client: formData.client,
         salary: formData.salary, location: formData.location,
         status: 'active' as const, description: formData.description,
+        contact_name: formData.contactName,
+        contact_email: formData.contactEmail,
       };
 
       if (!configured || !supabase) {
@@ -113,7 +117,7 @@ const JobsView: React.FC<JobsViewProps> = ({
   const closeModal = () => {
     setShowModal(false);
     setEditingJob(null);
-    setFormData({ title: '', client: '', salary: '', location: '', description: '' });
+    setFormData({ title: '', client: '', salary: '', location: '', description: '', contactName: '', contactEmail: '' });
   };
 
   return (
@@ -180,6 +184,20 @@ const JobsView: React.FC<JobsViewProps> = ({
                 <i className="fa-solid fa-calendar w-4 text-center text-indigo-400"></i>
                 <span className="font-medium">Opened {new Date(job.createdAt || Date.now()).toLocaleDateString()}</span>
               </div>
+              {(job as any).contactName && (
+                <div className="flex items-center gap-2 text-slate-400 text-xs">
+                  <i className="fa-solid fa-user-tie w-4 text-center text-indigo-400"></i>
+                  <span className="font-medium">{(job as any).contactName}</span>
+                </div>
+              )}
+              {(job as any).contactEmail && (
+                <div className="flex items-center gap-2 text-slate-400 text-xs">
+                  <i className="fa-solid fa-envelope w-4 text-center text-indigo-400"></i>
+                  <a href={`mailto:${(job as any).contactEmail}`} className="font-medium hover:text-indigo-600 transition-colors">
+                    {(job as any).contactEmail}
+                  </a>
+                </div>
+              )}
             </div>
             <button
               onClick={() => onManageCandidates?.(job.id)}
@@ -246,6 +264,22 @@ const JobsView: React.FC<JobsViewProps> = ({
                   className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium resize-none"
                   placeholder="Paste the job requirements and responsibilities..."
                   value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Hiring Manager</label>
+                  <input
+                    className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                    placeholder="e.g. Jane Smith"
+                    value={formData.contactName} onChange={e => setFormData({ ...formData, contactName: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Hiring Manager Email</label>
+                  <input type="email"
+                    className="w-full p-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                    placeholder="e.g. jane@techcorp.com"
+                    value={formData.contactEmail} onChange={e => setFormData({ ...formData, contactEmail: e.target.value })} />
+                </div>
               </div>
               <div className="flex gap-4 pt-2">
                 <button type="button" onClick={closeModal}
