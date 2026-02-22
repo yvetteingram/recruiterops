@@ -22,6 +22,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
   const [showNotesModal, setShowNotesModal] = useState<Candidate | null>(null);
   const [notesText, setNotesText] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const [newCandidateForm, setNewCandidateForm] = useState({ name: '', title: '', company: '', jobId: filterJobId || '', linkedInUrl: '', email: '', phoneNumber: '' });
 
@@ -152,6 +153,14 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
     }
   };
 
+  const handleCopyDraft = (candidate: Candidate) => {
+    if (!candidate.outreachDraft) return;
+    navigator.clipboard.writeText(candidate.outreachDraft).then(() => {
+      setCopiedId(candidate.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
   return (
     <div className="space-y-10">
       {/* Schedule Modal */}
@@ -278,6 +287,15 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                     <button onClick={() => handleDraftOutreach(candidate)} disabled={isDrafting === candidate.id} title="Draft Outreach" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isDrafting === candidate.id ? 'bg-amber-500 text-white animate-pulse border-amber-500' : 'bg-white border-slate-100 text-slate-900 hover:border-amber-600 hover:bg-slate-50 shadow-sm'}`}>
                       <i className={`fa-solid ${isDrafting === candidate.id ? 'fa-spinner fa-spin' : 'fa-paper-plane'} text-xs`}></i>
                     </button>
+                    {candidate.outreachDraft && (
+                      <button
+                        onClick={() => handleCopyDraft(candidate)}
+                        title="Copy Draft to Clipboard"
+                        className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 shadow-sm ${copiedId === candidate.id ? 'bg-green-500 text-white border-green-500' : 'bg-white border-slate-100 text-green-600 hover:border-green-400 hover:bg-green-50'}`}
+                      >
+                        <i className={`fa-solid ${copiedId === candidate.id ? 'fa-check' : 'fa-copy'} text-xs`}></i>
+                      </button>
+                    )}
                     <button onClick={() => handleScheduleInterview(candidate)} disabled={isScheduling === candidate.id} title="Schedule Interview" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isScheduling === candidate.id ? 'bg-indigo-500 text-white animate-pulse border-indigo-500' : 'bg-white border-slate-100 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-50 shadow-sm'}`}>
                       <i className={`fa-solid ${isScheduling === candidate.id ? 'fa-spinner fa-spin' : 'fa-calendar-plus'} text-xs`}></i>
                     </button>
