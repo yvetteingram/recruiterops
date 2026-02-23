@@ -12,8 +12,8 @@ You excel at:
 Your tone is professional, urgent, and operations-focused. You do not source, vet, or score candidates; you accelerate the operations for talent already in the pipeline.`;
 
 const groqRequest = async (systemPrompt: string, userPrompt: string): Promise<string> => {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error('GROQ_API_KEY not configured.');
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+  if (!apiKey) throw new Error('VITE_GROQ_API_KEY not configured.');
 
   const response = await fetch(GROQ_API_URL, {
     method: 'POST',
@@ -38,7 +38,7 @@ const groqRequest = async (systemPrompt: string, userPrompt: string): Promise<st
 };
 
 export const getDailySummary = async (jobs: any[], candidates: any[]) => {
-  if (!process.env.GROQ_API_KEY) return "AI Summary unavailable.";
+  if (!import.meta.env.VITE_GROQ_API_KEY) return "AI Summary unavailable.";
   try {
     return await groqRequest(
       DEFAULT_INSTRUCTION,
@@ -58,7 +58,7 @@ export const getDailySummary = async (jobs: any[], candidates: any[]) => {
 };
 
 export const detectStalledCandidates = async (candidates: any[]) => {
-  if (!process.env.GROQ_API_KEY) return [];
+  if (!import.meta.env.VITE_GROQ_API_KEY) return [];
   try {
     const text = await groqRequest(
       DEFAULT_INSTRUCTION + '\nYou must respond with valid JSON only. No markdown, no explanation.',
@@ -81,7 +81,7 @@ export const coordinateInterview = async (
   jobTitle: string,
   recruiterName: string
 ) => {
-  if (!process.env.GROQ_API_KEY) return null;
+  if (!import.meta.env.VITE_GROQ_API_KEY) return null;
   try {
     const text = await groqRequest(
       'You are RecruiterOps Scheduler. Create a professional invite that minimizes friction. Respond with valid JSON only. No markdown.',
@@ -99,7 +99,7 @@ export const generateOutreach = async (
   jobContext: string,
   customInstruction?: string
 ) => {
-  if (!process.env.GROQ_API_KEY) return "API Key not configured.";
+  if (!import.meta.env.VITE_GROQ_API_KEY) return "API Key not configured.";
   try {
     return await groqRequest(
       customInstruction || DEFAULT_INSTRUCTION,
