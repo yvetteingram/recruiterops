@@ -60,6 +60,8 @@ export interface Candidate {
   notes?: string;
   placed_at?: string;
   placement_fee?: number;
+  placement_type?: 'full_time' | 'contract';
+  fee_clears_at?: string;
 }
 
 export interface Stats {
@@ -68,6 +70,8 @@ export interface Stats {
   sessionsBooked: number;
   placements: number;
   totalFees: number;
+  confirmedFees: number;
+  pendingFees: number;
   timeSavedMinutes: number;
   stalledItemsCount: number;
 }

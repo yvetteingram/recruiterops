@@ -197,6 +197,8 @@ const App: React.FC = () => {
           notes: c.notes,
           placed_at: c.placed_at,
           placement_fee: c.placement_fee,
+          placement_type: c.placement_type || 'full_time',
+          fee_clears_at: c.fee_clears_at,
         })));
       }
 
@@ -256,13 +258,29 @@ const App: React.FC = () => {
   const STALL_DAYS = 3;
   const stalledCandidates = candidates.filter(c => {
     if (!c.lastActivityAt) return true;
+    if (c.stage === CandidateStage.PLACED || c.stage === CandidateStage.PRESENTED || c.stage === CandidateStage.REJECTED) return false;
     const daysSince = (Date.now() - new Date(c.lastActivityAt).getTime()) / (1000 * 60 * 60 * 24);
-    return daysSince >= STALL_DAYS && c.stage !== CandidateStage.PRESENTED && c.stage !== CandidateStage.REJECTED;
+    return daysSince >= STALL_DAYS;
   });
   const stalledCount = stalledCandidates.length;
 
+  const GUARANTEE_DAYS = 90;
   const placedCandidates = candidates.filter(c => c.stage === CandidateStage.PLACED);
-  const totalFees = placedCandidates.reduce((sum, c) => sum + (c.placement_fee || 0), 0);
+  const confirmedFees = placedCandidates
+    .filter(c => {
+      if (c.placement_type === 'contract') return true;
+      if (!c.fee_clears_at) return false;
+      return new Date(c.fee_clears_at) <= new Date();
+    })
+    .reduce((sum, c) => sum + (c.placement_fee || 0), 0);
+  const pendingFees = placedCandidates
+    .filter(c => {
+      if (c.placement_type === 'contract') return false;
+      if (!c.fee_clears_at) return true;
+      return new Date(c.fee_clears_at) > new Date();
+    })
+    .reduce((sum, c) => sum + (c.placement_fee || 0), 0);
+  const totalFees = confirmedFees + pendingFees;
 
   const stats = {
     totalJobs: jobs.length,
@@ -270,6 +288,8 @@ const App: React.FC = () => {
     sessionsBooked: candidates.filter(c => c.stage === CandidateStage.INTERVIEWING).length,
     placements: placedCandidates.length,
     totalFees,
+    confirmedFees,
+    pendingFees,
     timeSavedMinutes: candidates.length * 20,
     stalledItemsCount: stalledCount,
   };

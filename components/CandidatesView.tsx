@@ -25,6 +25,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showPlacementModal, setShowPlacementModal] = useState<Candidate | null>(null);
   const [placementFee, setPlacementFee] = useState('');
+  const [placementType, setPlacementType] = useState<'full_time' | 'contract'>('full_time');
   const [savingPlacement, setSavingPlacement] = useState(false);
 
   const [newCandidateForm, setNewCandidateForm] = useState({ name: '', title: '', company: '', jobId: filterJobId || '', linkedInUrl: '', email: '', phoneNumber: '' });
@@ -158,18 +159,32 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
     setSavingPlacement(true);
     const fee = parseFloat(placementFee.replace(/[^0-9.]/g, '')) || 0;
     const now = new Date().toISOString();
+    const feeClearsAt = placementType === 'full_time'
+      ? new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
     try {
       if (supabase && !showPlacementModal.isDemo) {
         await supabase.from('candidates').update({
           stage: CandidateStage.PLACED,
           placed_at: now,
           placement_fee: fee,
+          placement_type: placementType,
+          fee_clears_at: feeClearsAt,
         }).eq('id', showPlacementModal.id);
       }
-      onUpdateCandidate({ ...showPlacementModal, stage: CandidateStage.PLACED, placed_at: now, placement_fee: fee });
-      onLog?.('Placement Recorded', `${showPlacementModal.name} placed. Fee: $${fee.toLocaleString()}`, 'user');
+      onUpdateCandidate({
+        ...showPlacementModal,
+        stage: CandidateStage.PLACED,
+        placed_at: now,
+        placement_fee: fee,
+        placement_type: placementType,
+        fee_clears_at: feeClearsAt || undefined,
+      });
+      const typeLabel = placementType === 'full_time' ? 'Full-Time' : 'Contract';
+      onLog?.('Placement Recorded', `${showPlacementModal.name} placed (${typeLabel}). Fee: $${fee.toLocaleString()}`, 'user');
       setShowPlacementModal(null);
       setPlacementFee('');
+      setPlacementType('full_time');
     } catch (err) {
       alert('Failed to record placement.');
     } finally {
@@ -230,7 +245,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
       <div className="flex justify-between items-end">
         <div>
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1.5">Recruiter Workspace</h3>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Talent Pipeline</h2>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Candidates</h2>
         </div>
         <button onClick={() => setShowAddModal(true)} className="bg-slate-900 text-white px-10 py-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-2xl shadow-slate-200 transition-all active:scale-95 flex items-center gap-3">
           <i className="fa-solid fa-plus text-xs"></i>
@@ -432,6 +447,28 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
               </div>
             </div>
             <div className="p-8 space-y-6">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-2.5 tracking-widest">Placement Type</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setPlacementType('full_time')}
+                    className={`py-3 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all ${placementType === 'full_time' ? 'bg-green-500 text-white border-green-500' : 'bg-slate-50 text-slate-500 border-slate-100 hover:border-green-300'}`}
+                  >
+                    Full-Time
+                  </button>
+                  <button
+                    onClick={() => setPlacementType('contract')}
+                    className={`py-3 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all ${placementType === 'contract' ? 'bg-blue-500 text-white border-blue-500' : 'bg-slate-50 text-slate-500 border-slate-100 hover:border-blue-300'}`}
+                  >
+                    Contract
+                  </button>
+                </div>
+                {placementType === 'full_time' && (
+                  <p className="text-[10px] text-amber-600 font-bold mt-2">
+                    Full-time placements are subject to a 90-day guarantee period. The fee will be marked as pending until the guarantee period ends.
+                  </p>
+                )}
+              </div>
               <div>
                 <label className="block text-[10px] font-black uppercase text-slate-400 mb-2.5 tracking-widest">Placement Fee</label>
                 <div className="relative">

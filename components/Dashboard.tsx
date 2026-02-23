@@ -59,12 +59,21 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
           { label: 'Candidates in Pipeline', value: stats.activeCandidates, icon: 'fa-user-group', color: 'bg-indigo-50 text-indigo-600' },
           { label: 'Interviews Scheduled', value: stats.sessionsBooked, icon: 'fa-calendar-check', color: 'bg-green-50 text-green-600' },
           { label: 'Placements', value: stats.placements, icon: 'fa-trophy', color: stats.placements > 0 ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400' },
-          { label: 'Fees Earned', value: stats.totalFees > 0 ? `$${stats.totalFees.toLocaleString()}` : '—', icon: 'fa-dollar-sign', color: stats.totalFees > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400' },
+          {
+            label: 'Confirmed Fees',
+            value: stats.confirmedFees > 0 ? `$${stats.confirmedFees.toLocaleString()}` : '—',
+            icon: 'fa-dollar-sign',
+            color: stats.confirmedFees > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400',
+            sub: stats.pendingFees > 0 ? `$${stats.pendingFees.toLocaleString()} pending guarantee` : null,
+          },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{stat.label}</p>
               <h3 className="text-xl font-bold text-slate-800 tracking-tight">{stat.value}</h3>
+              {'sub' in stat && stat.sub && (
+                <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest mt-0.5">{stat.sub}</p>
+              )}
             </div>
             <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${stat.color} text-sm`}>
               <i className={`fa-solid ${stat.icon}`}></i>
