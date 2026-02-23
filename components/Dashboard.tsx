@@ -16,6 +16,7 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [stalledCandidates, setStalledCandidates] = useState<any[]>([]);
   const [lastBriefingTime, setLastBriefingTime] = useState<Date | null>(null);
+  const [copiedAction, setCopiedAction] = useState<string | null>(null);
 
   const refreshBriefing = async () => {
     if (loadingSummary) return;
@@ -134,8 +135,14 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
                   <div key={i} className="p-4 bg-red-50 border border-red-100 rounded-2xl">
                     <p className="text-xs font-black text-slate-900 uppercase mb-1">{candidate?.name || 'Unknown'}</p>
                     <p className="text-[10px] text-red-600 font-bold mb-2">{s.reason}</p>
-                    <button className="text-[9px] font-black uppercase tracking-widest text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-100 transition-colors">
-                      {s.suggestedAction}
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(s.suggestedAction);
+                        setCopiedAction(s.id);
+                        setTimeout(() => setCopiedAction(null), 2000);
+                      }}
+                      className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-colors ${copiedAction === s.id ? 'bg-green-500 text-white border-green-500' : 'text-slate-900 bg-white border-red-200 hover:bg-red-100'}`}>
+                      {copiedAction === s.id ? '✓ Copied' : s.suggestedAction}
                     </button>
                   </div>
                 );
