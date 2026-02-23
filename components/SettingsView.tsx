@@ -100,9 +100,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <div className="mt-6 pt-6 border-t border-slate-50">
             <p className="text-[10px] text-slate-400 leading-relaxed">
-              To cancel your subscription, click "Manage or Cancel Subscription" above. 
-              You will be taken to your Gumroad account where you can manage your billing. 
-              Your access remains active until the end of your current billing period.
+              To manage or cancel your subscription, click the link above. You will be taken to your Gumroad Library — select <strong className="text-slate-500">RecruiterOps</strong> from your purchases, then click <strong className="text-slate-500">Manage membership</strong>. Your access remains active until the end of your current billing period if cancelled.
             </p>
           </div>
         </div>
