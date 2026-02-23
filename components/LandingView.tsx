@@ -11,19 +11,23 @@ const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) =
   const faqs = [
     {
       q: "I already use an ATS. Why do I need this?",
-      a: "Most ATS platforms are built for tracking, not for taking action. They store your data but don't tell you which candidates are going cold, don't draft your follow-ups, and don't flag what needs attention today. RecruiterOps sits on top of whatever you're already using and handles the operational work that falls through the cracks — the follow-ups you meant to send, the interviews that didn't get scheduled, the candidates who went silent."
+      a: "Most ATS platforms are built for tracking, not for taking action. They store your data but don't tell you which candidates are going cold, don't draft your follow-ups, and don't flag what needs attention today. RecruiterOps handles the operational work that falls through the cracks — the follow-ups you meant to send, the interviews that didn't get coordinated, the candidates who went silent."
     },
     {
       q: "I'm a solo recruiter. Is this really built for me?",
-      a: "Yes — this was designed specifically for independent recruiters and small boutique agencies who don't have a coordinator or admin support. When you're running a full desk alone, every hour you spend on scheduling, follow-ups, and status updates is an hour you're not billing. RecruiterOps handles that operational layer so you can stay focused on client relationships and placements."
+      a: "Yes — this was designed specifically for independent recruiters and recruiting side hustlers who don't have coordinator or admin support. When you're running a full desk alone, every hour you spend on follow-ups, notes, and status updates is an hour you're not billing. RecruiterOps handles that operational layer so you can stay focused on placements."
     },
     {
-      q: "Will this replace the personal touch that makes my placements work?",
-      a: "No. RecruiterOps handles the logistics — scheduling, follow-up drafts, daily briefings — not the relationship. Every message it drafts is reviewed and sent by you. Every interview is confirmed by you. The AI does the administrative heavy lifting so you have more time for the conversations that actually close placements."
+      q: "Does it actually send emails for me?",
+      a: "RecruiterOps drafts the emails and copies them to your clipboard in one click — you paste and send from your own Gmail or email client. This keeps you in control of every communication while eliminating the time you spend writing from scratch."
     },
     {
-      q: "What counts as a stalled candidate and how does it know?",
-      a: "RecruiterOps monitors the last activity date on every candidate in your pipeline. If a candidate hasn't moved stages or received a follow-up in 48 hours, they're flagged in your daily briefing with a suggested next action. You decide what to do — the system just makes sure nothing slips through unnoticed."
+      q: "What does the stalled candidate detection actually do?",
+      a: "RecruiterOps monitors the last activity date on every candidate. If a candidate hasn't had any activity in 3+ days, they're flagged with a red badge in your sidebar and highlighted in your pipeline. You'll also see a suggested action from the AI so you know exactly what to do next."
+    },
+    {
+      q: "Can I track my placement fees?",
+      a: "Yes. When you mark a candidate as placed, you log the fee right in the app. Your dashboard shows total placements and total fees earned so you always know your desk's ROI."
     },
     {
       q: "Does RecruiterOps source or screen candidates?",
@@ -31,7 +35,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) =
     },
     {
       q: "How long does setup take?",
-      a: "Most recruiters are up and running in under 10 minutes. Create your account, add your first job order, and start adding candidates. The AI briefings and stalled detection activate automatically once your pipeline has data. Optional integrations like calendar scheduling take a few extra minutes to configure but are not required to get started."
+      a: "Most recruiters are up and running in under 10 minutes. Purchase on Gumroad, sign up with the same email, and your access is activated instantly. Add your first job order and candidate and the AI features activate automatically."
     }
   ];
 
@@ -73,13 +77,13 @@ const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) =
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full mb-8">
             <span className="h-2 w-2 bg-indigo-500 rounded-full animate-pulse"></span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">The Operations Agent for Boutique Agencies</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Built for Solo Recruiters & Recruiting Side Hustlers</span>
           </div>
           <h1 className="text-5xl md:text-8xl font-black text-slate-900 tracking-tighter mb-8 leading-[1.0] uppercase">
             Add 1 extra placement <br/> <span className="text-indigo-600">every single month.</span>
           </h1>
           <p className="text-lg md:text-xl text-slate-500 font-medium max-w-3xl mx-auto mb-12 leading-relaxed">
-            Eliminate admin friction. Automated scheduling, stalled candidate detection, and daily execution summaries. No more dropped candidates.
+            RecruiterOps is the AI-powered ops tool for independent recruiters. Draft outreach, catch stalled candidates, generate interview invites, and track every placement — all from one desk.
           </p>
           <div className="flex flex-col items-center gap-4">
             {/* Hero CTA → goes to Gumroad */}
@@ -98,57 +102,32 @@ const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) =
         </div>
       </section>
 
-      {/* App Visuals */}
+      {/* Features Section */}
       <section className="py-20 bg-slate-50 border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Visual 1: Morning Briefing */}
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white"><i className="fa-solid fa-sun text-sm"></i></div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">Morning Briefing</h4>
-              </div>
-              <div className="space-y-4">
-                <div className="h-3 w-full bg-slate-100 rounded-full"></div>
-                <div className="h-3 w-3/4 bg-slate-100 rounded-full"></div>
-                <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                  <p className="text-[10px] font-black text-indigo-600 uppercase mb-1">Top Action Item</p>
-                  <p className="text-xs font-bold text-slate-800">Nudge Alex (Stalled 4 days)</p>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-4">Everything on your desk. Nothing falling through the cracks.</h2>
+            <p className="text-slate-500 font-medium max-w-2xl mx-auto">Every feature is built around one goal — more placements with less admin.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: 'fa-bolt', color: 'bg-indigo-600', title: 'Daily AI Briefing', desc: 'Every session opens with an AI summary of your pipeline — who needs attention, what\'s moving, and your next actions.' },
+              { icon: 'fa-triangle-exclamation', color: 'bg-red-500', title: 'Stalled Candidate Alerts', desc: 'Candidates inactive for 3+ days get flagged automatically with a red badge in your sidebar. Never lose a placement to silence.' },
+              { icon: 'fa-paper-plane', color: 'bg-amber-500', title: 'AI Outreach Drafts', desc: 'Generate high-quality follow-up emails for any candidate in one click. Copy to Gmail and send — no blank page staring.' },
+              { icon: 'fa-calendar-check', color: 'bg-green-600', title: 'Interview Invite Generator', desc: 'AI drafts a professional interview coordination message — subject, body, and duration — ready to copy and paste.' },
+              { icon: 'fa-note-sticky', color: 'bg-purple-500', title: 'Quick Candidate Notes', desc: 'Add interview feedback, compensation expectations, and next steps to any candidate. Always know where things stand.' },
+              { icon: 'fa-user-tie', color: 'bg-blue-500', title: 'Client Contact Tracking', desc: 'Store your hiring manager\'s name and email on every job order. One click to email your client without digging through your inbox.' },
+              { icon: 'fa-trophy', color: 'bg-emerald-500', title: 'Placement Tracker', desc: 'Mark candidates as placed, log your fee, and watch your earnings grow on the dashboard. Know your desk\'s ROI at a glance.' },
+              { icon: 'fa-gauge-high', color: 'bg-slate-700', title: 'Pipeline Health Widget', desc: 'Active candidates, stalled count, interviews scheduled, and last AI briefing time — all visible at a glance.' },
+            ].map((f, i) => (
+              <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all">
+                <div className={`h-10 w-10 ${f.color} rounded-xl flex items-center justify-center text-white mb-4`}>
+                  <i className={`fa-solid ${f.icon} text-sm`}></i>
                 </div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 mb-2">{f.title}</h4>
+                <p className="text-[11px] text-slate-500 leading-relaxed font-medium">{f.desc}</p>
               </div>
-            </div>
-            {/* Visual 2: Stalled Detection */}
-            <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 bg-red-500 rounded-xl flex items-center justify-center text-white"><i className="fa-solid fa-triangle-exclamation text-sm"></i></div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-white">Stalled Detection</h4>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/10">
-                  <span className="text-[10px] font-bold text-white uppercase">Sarah J.</span>
-                  <span className="text-[8px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded font-black">48h+ STUCK</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/10 opacity-50">
-                  <span className="text-[10px] font-bold text-white uppercase">David C.</span>
-                  <span className="text-[8px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded font-black">MOVING</span>
-                </div>
-              </div>
-            </div>
-            {/* Visual 3: AI Scheduling */}
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white"><i className="fa-solid fa-calendar-check text-sm"></i></div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-slate-900">Auto-Scheduling</h4>
-              </div>
-              <div className="bg-slate-50 p-4 rounded-xl space-y-2">
-                <p className="text-[10px] font-bold text-slate-400">Subject: Technical Interview</p>
-                <div className="h-2 w-full bg-slate-200 rounded-full"></div>
-                <div className="h-2 w-2/3 bg-slate-200 rounded-full"></div>
-                <div className="pt-2 flex justify-end">
-                   <div className="h-6 w-16 bg-indigo-600 rounded-lg"></div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -174,8 +153,8 @@ const LandingView: React.FC<LandingViewProps> = ({ onGetStarted, onDemoMode }) =
       {/* CTA Section */}
       <section className="py-32 bg-slate-900 text-center">
          <div className="max-w-3xl mx-auto px-6">
-            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase mb-6">Scale without hiring.</h2>
-            <p className="text-slate-400 mb-4 font-medium">Join boutique recruiters who are using RecruiterOps to drive placement velocity.</p>
+            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase mb-6">Your desk. Fully loaded.</h2>
+            <p className="text-slate-400 mb-4 font-medium">Solo recruiters and side hustlers are using RecruiterOps to close more placements without working more hours.</p>
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-10">
               Purchase on Gumroad → Sign up with the same email → Access activated instantly
             </p>
