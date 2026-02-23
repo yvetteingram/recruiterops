@@ -55,11 +55,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
       const updated = { ...candidate, outreachDraft: outreach };
       if (supabase && !candidate.isDemo) await supabase.from('candidates').update({ outreach_draft: outreach }).eq('id', candidate.id);
       onUpdateCandidate(updated);
-      onLog?.("Follow-up Drafted", `AI Agent prepared a nudge for ${candidate.name}.`, "ai");
-      
-      if (profile?.webhook_outreach) {
-        triggerWebhook(profile.webhook_outreach, { event: 'outreach_drafted', candidate: updated });
-      }
+      onLog?.("Follow-up Drafted", `AI draft prepared for ${candidate.name}.`, "ai");
     }
     setIsDrafting(null);
   };
@@ -87,21 +83,14 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
   const finalizeSchedule = async () => {
     if (!showScheduleModal) return;
     const { candidate, invite } = showScheduleModal;
-    
-    onLog?.("Dispatching Invite", `Calendar coordination request sent for ${candidate.name}.`, "user");
-    
-    if (profile?.webhook_calendar) {
-      await triggerWebhook(profile.webhook_calendar, { 
-        event: 'schedule_prescreen', 
-        candidate, 
-        invite,
-        recruiterEmail: profile.email 
-      });
-    }
+
+    const clipboardText = `Subject: ${invite.subject}\n\n${invite.description}\n\nSuggested Duration: ${invite.suggestedDuration} minutes`;
+    navigator.clipboard.writeText(clipboardText).catch(() => {});
 
     const updated = { ...candidate, stage: CandidateStage.INTERVIEWING };
     if (supabase && !candidate.isDemo) await supabase.from('candidates').update({ stage: CandidateStage.INTERVIEWING }).eq('id', candidate.id);
     onUpdateCandidate(updated);
+    onLog?.("Interview Invite Copied", `Draft invite for ${candidate.name} copied to clipboard.`, "user");
     setShowScheduleModal(null);
   };
 
@@ -196,8 +185,8 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 border border-slate-100">
             <div className="p-10 border-b border-slate-50 bg-indigo-50/30 flex items-center justify-between">
                <div>
-                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Coordination Audit</h3>
-                 <p className="text-[9px] text-indigo-500 font-black uppercase tracking-widest">Pre-Screen Scheduling</p>
+                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Draft Interview Invite</h3>
+                 <p className="text-[9px] text-indigo-500 font-black uppercase tracking-widest">AI-generated — copy and send manually</p>
                </div>
                <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
                  <i className="fa-solid fa-calendar-check"></i>
@@ -205,7 +194,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
             </div>
             <div className="p-10 space-y-8">
                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                  <h4 className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Proposed Invite</h4>
+                  <h4 className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">AI Draft — Copy to Your Email</h4>
                   <p className="text-sm font-black text-slate-900 mb-2">{showScheduleModal.invite.subject}</p>
                   <p className="text-[10px] text-slate-500 leading-relaxed font-medium mb-4">{showScheduleModal.invite.description}</p>
                   <div className="flex items-center gap-3">
@@ -231,7 +220,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                </div>
                <div className="flex gap-4">
                   <button onClick={() => setShowScheduleModal(null)} className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all">Cancel</button>
-                  <button onClick={finalizeSchedule} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-100 active:scale-95 transition-all">Confirm & Dispatched</button>
+                  <button onClick={finalizeSchedule} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-100 active:scale-95 transition-all">Copy Invite Draft</button>
                </div>
             </div>
           </div>
@@ -324,7 +313,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
                         <i className={`fa-solid ${copiedId === candidate.id ? 'fa-check' : 'fa-copy'} text-xs`}></i>
                       </button>
                     )}
-                    <button onClick={() => handleScheduleInterview(candidate)} disabled={isScheduling === candidate.id} title="Schedule Interview" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isScheduling === candidate.id ? 'bg-indigo-500 text-white animate-pulse border-indigo-500' : 'bg-white border-slate-100 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-50 shadow-sm'}`}>
+                    <button onClick={() => handleScheduleInterview(candidate)} disabled={isScheduling === candidate.id} title="Draft Interview Invite" className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isScheduling === candidate.id ? 'bg-indigo-500 text-white animate-pulse border-indigo-500' : 'bg-white border-slate-100 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-50 shadow-sm'}`}>
                       <i className={`fa-solid ${isScheduling === candidate.id ? 'fa-spinner fa-spin' : 'fa-calendar-plus'} text-xs`}></i>
                     </button>
                     {candidate.stage !== CandidateStage.PLACED && (
