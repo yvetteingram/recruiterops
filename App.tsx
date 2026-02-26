@@ -101,7 +101,7 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     setLoading(true);
     if (supabase && configured) {
-      try { await supabase.auth.signOut(); } catch (e) { console.error("Logout error", e); }
+      try { await supabase.auth.signOut(); } catch (e) { console.error('Logout error', e); }
     }
     setSession(null);
     setProfile(null);
@@ -115,20 +115,20 @@ const App: React.FC = () => {
   };
 
   const handleExportCSV = useCallback(() => {
-    if (!candidates.length) { alert("No candidate data to export."); return; }
-    const headers = ["Name", "Title", "Company", "Stage", "Last Activity"];
+    if (!candidates.length) { alert('No candidate data to export.'); return; }
+    const headers = ['Name', 'Title', 'Company', 'Stage', 'Last Activity'];
     const rows = candidates.map(c => [
       `"${c.name}"`, `"${c.title}"`, `"${c.company}"`,
       `"${c.stage}"`, `"${c.lastActivityAt || ''}"`
     ]);
-    const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `RecruiterOps_candidates_${new Date().toISOString().split('T')[0]}.csv`);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `RecruiterOps_candidates_${new Date().toISOString().split('T')[0]}.csv`);
     link.click();
-    addLog("Pipeline Exported", "Candidate data exported to CSV.", "user");
+    addLog('Pipeline Exported', 'Candidate data exported to CSV.', 'user');
   }, [candidates, addLog]);
 
   const fetchData = useCallback(async (force = false) => {
@@ -165,7 +165,6 @@ const App: React.FC = () => {
           subscription_status: profileData.subscription_status || 'active',
           trial_ends_at: profileData.trial_ends_at || null,
           gumroad_sale_id: profileData.gumroad_sale_id || null,
-          
         });
       }
 
@@ -204,7 +203,7 @@ const App: React.FC = () => {
 
       initialFetchDone.current = true;
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -212,19 +211,36 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!configured || !supabase || !supabase.auth) { setLoading(false); return; }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) setLoading(false);
-    }).catch(e => { console.error("Session error", e); setLoading(false); });
+    }).catch(e => { console.error('Session error', e); setLoading(false); });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (!session && !demoMode) {
         setLoading(false);
         initialFetchDone.current = false;
         setProfile(null); setJobs([]); setCandidates([]);
       }
+      // When a user signs in, claim any pending Gumroad subscription
+      if (_event === 'SIGNED_IN' && session?.user) {
+        try {
+          await fetch('/.netlify/functions/confirm-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: session.user.email,
+              userId: session.user.id,
+            }),
+          });
+        } catch (e) {
+          console.error('confirm-subscription call failed:', e);
+        }
+      }
     });
+
     return () => { if (subscription) subscription.unsubscribe(); };
   }, [configured, demoMode]);
 
@@ -328,7 +344,6 @@ const App: React.FC = () => {
       <main className={`flex-1 p-10 ml-64 overflow-y-auto ${isExpired && activeTab !== 'settings' ? 'pointer-events-none grayscale' : ''}`}>
         <header className="flex justify-between items-center mb-12">
           <div>
-            {/* ✅ Updated header verbiage */}
             <h1 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Recruiting Operations</h1>
             <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Recruiter Desk</h2>
           </div>
@@ -367,7 +382,6 @@ const App: React.FC = () => {
             profile={profile}
             onUpdateCandidate={(c) => {
               setCandidates(p => p.map(x => x.id === c.id ? c : x));
-              // Auto-mark job as filled when candidate is placed
               if (c.stage === CandidateStage.PLACED && c.jobId) {
                 setJobs(p => p.map(j => j.id === c.jobId ? { ...j, status: 'filled' } : j));
                 if (supabase && !c.isDemo) {

@@ -20,7 +20,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!configured || !supabase) {
-      setError("Database connection not detected. Launch demo to explore.");
+      setError('Database connection not detected. Launch demo to explore.');
       return;
     }
 
@@ -29,15 +29,30 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
 
     try {
       if (isSignUp) {
-        // Check if email has an active Gumroad subscription before allowing signup
-        const { data: profileData } = await supabase
+        const normalizedEmail = email.toLowerCase().trim();
+
+        // Check 1: Does an active profile already exist? (returning customer)
+        const { data: existingProfile } = await supabase
           .from('profiles')
           .select('subscription_status')
-          .eq('email', email.toLowerCase().trim())
+          .eq('email', normalizedEmail)
           .single();
 
-        if (!profileData || profileData.subscription_status !== 'active') {
-          setError("No active subscription found for this email. Please purchase RecruiterOps on Gumroad first, then return here to create your account.");
+        // Check 2: Is there a pending subscription from Gumroad? (bought before registering)
+        const { data: pendingSubscription } = await supabase
+          .from('pending_subscriptions')
+          .select('plan')
+          .eq('email', normalizedEmail)
+          .single();
+
+        const hasAccess =
+          existingProfile?.subscription_status === 'active' ||
+          !!pendingSubscription;
+
+        if (!hasAccess) {
+          setError(
+            'No active subscription found for this email. Please purchase RecruiterOps on Gumroad first, then return here to create your account.'
+          );
           setLoading(false);
           return;
         }
@@ -46,7 +61,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
         if (authError) {
           setError(authError.message);
         } else {
-          alert("Activation email sent. Please verify your email to access your account.");
+          alert('Activation email sent. Please verify your email to access your account.');
         }
       } else {
         const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
@@ -57,7 +72,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
         }
       }
     } catch (e: any) {
-      setError(e.message || "Auth protocol failure.");
+      setError(e.message || 'Auth protocol failure.');
     } finally {
       setLoading(false);
     }
@@ -73,11 +88,17 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
           <span className="text-lg font-black tracking-tight text-slate-900 uppercase">RecruiterOps</span>
         </div>
         <div className="flex items-center gap-6">
-          <button onClick={() => setIsSignUp(!isSignUp)} className="text-xs font-black uppercase text-slate-400 hover:text-slate-900 transition-colors tracking-widest">
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-xs font-black uppercase text-slate-400 hover:text-slate-900 transition-colors tracking-widest"
+          >
             {isSignUp ? 'Log In' : 'Sign Up'}
           </button>
           {!configured && (
-            <button onClick={onDemoLogin} className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-sm">
+            <button
+              onClick={onDemoLogin}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-sm"
+            >
               Launch Demo
             </button>
           )}
@@ -85,10 +106,9 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-        {/* Background Accent */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-[500px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-        <button 
+        <button
           onClick={onBack}
           className="mb-8 text-slate-400 hover:text-slate-600 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-colors z-10"
         >
@@ -101,8 +121,8 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
             {isSignUp ? 'Create Account' : 'Recruiter Login'}
           </h2>
           <p className="text-slate-500 font-medium text-sm mb-10 leading-relaxed">
-            {isSignUp 
-              ? 'Use the same email you purchased with on Gumroad to activate your account.' 
+            {isSignUp
+              ? 'Use the same email you purchased with on Gumroad to activate your account.'
               : 'Welcome back. Sign in to your recruiting desk.'}
           </p>
 
@@ -127,7 +147,9 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
 
           <form onSubmit={handleAuth} className="space-y-6 text-left">
             <div>
-              <label className="block text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5">Email Address</label>
+              <label className="block text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5">
+                Email Address
+              </label>
               <input
                 type="email"
                 required
@@ -139,7 +161,9 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
             </div>
 
             <div className="relative">
-              <label className="block text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5">Secure Password</label>
+              <label className="block text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5">
+                Secure Password
+              </label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
@@ -148,7 +172,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 bottom-4 text-slate-400 hover:text-slate-600 transition-colors"
@@ -164,26 +188,31 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
             >
               {loading ? (
                 <i className="fa-solid fa-spinner fa-spin"></i>
+              ) : isSignUp ? (
+                'ACTIVATE ACCOUNT'
               ) : (
-                isSignUp ? 'ACTIVATE ACCOUNT' : 'SIGN IN'
+                'SIGN IN'
               )}
             </button>
           </form>
 
           {!configured && (
             <div className="mt-10 pt-8 border-t border-slate-50">
-               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4 italic leading-relaxed">
-                 Database integration required for persistent ops.
-               </p>
-               <button onClick={onDemoLogin} className="text-indigo-600 hover:text-indigo-700 font-black text-[10px] uppercase tracking-[0.2em]">
-                 Enter Workspace in Demo Mode
-               </button>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4 italic leading-relaxed">
+                Database integration required for persistent ops.
+              </p>
+              <button
+                onClick={onDemoLogin}
+                className="text-indigo-600 hover:text-indigo-700 font-black text-[10px] uppercase tracking-[0.2em]"
+              >
+                Enter Workspace in Demo Mode
+              </button>
             </div>
           )}
 
           <div className="mt-8">
             <p className="text-xs text-slate-500 font-medium">
-              {isSignUp ? 'Already have an account?' : "New to RecruiterOps?"}{' '}
+              {isSignUp ? 'Already have an account?' : 'New to RecruiterOps?'}{' '}
               <button
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-indigo-600 hover:text-indigo-700 font-bold underline underline-offset-4"
