@@ -244,7 +244,7 @@ const CandidatesView: React.FC<CandidatesViewProps> = ({ candidates, jobs, profi
 
       <div className="flex justify-between items-end">
         <div>
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1.5">Recruiter Workspace</h3>
+
           <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Candidates</h2>
         </div>
         <button onClick={() => setShowAddModal(true)} className="bg-slate-900 text-white px-10 py-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-2xl shadow-slate-200 transition-all active:scale-95 flex items-center gap-3">
