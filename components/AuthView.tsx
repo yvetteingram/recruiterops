@@ -26,17 +26,35 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
 
     setLoading(true);
     setError(null);
-    try {
-      const { error: authError } = isSignUp 
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
 
-      if (authError) {
-        setError(authError.message);
-      } else if (isSignUp) {
-        alert("Activation email sent. Please verify to begin scaling.");
+    try {
+      if (isSignUp) {
+        // Check if email has an active Gumroad subscription before allowing signup
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('email', email.toLowerCase().trim())
+          .single();
+
+        if (!profileData || profileData.subscription_status !== 'active') {
+          setError("No active subscription found for this email. Please purchase RecruiterOps on Gumroad first, then return here to create your account.");
+          setLoading(false);
+          return;
+        }
+
+        const { error: authError } = await supabase.auth.signUp({ email, password });
+        if (authError) {
+          setError(authError.message);
+        } else {
+          alert("Activation email sent. Please verify your email to access your account.");
+        }
       } else {
-        onAuthSuccess();
+        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+        if (authError) {
+          setError(authError.message);
+        } else {
+          onAuthSuccess();
+        }
       }
     } catch (e: any) {
       setError(e.message || "Auth protocol failure.");
@@ -83,13 +101,27 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess, onDemoLogin, onBack 
             {isSignUp ? 'Create Account' : 'Recruiter Login'}
           </h2>
           <p className="text-slate-500 font-medium text-sm mb-10 leading-relaxed">
-            {isSignUp ? 'Create your RecruiterOps account' : 'Welcome back. Sign in to your recruiting desk.'}
+            {isSignUp 
+              ? 'Use the same email you purchased with on Gumroad to activate your account.' 
+              : 'Welcome back. Sign in to your recruiting desk.'}
           </p>
 
           {error && (
-            <div className="mb-8 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-xs font-bold text-left flex items-start gap-3">
-              <i className="fa-solid fa-circle-exclamation mt-0.5"></i>
-              <p>{error}</p>
+            <div className="mb-8 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-xs font-bold text-left flex flex-col gap-3">
+              <div className="flex items-start gap-3">
+                <i className="fa-solid fa-circle-exclamation mt-0.5"></i>
+                <p>{error}</p>
+              </div>
+              {error.includes('Gumroad') && (
+                <a
+                  href="https://ketorahdigital.gumroad.com/l/recruiteros"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-6 text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-widest text-[10px] underline underline-offset-4"
+                >
+                  Purchase RecruiterOps on Gumroad →
+                </a>
+              )}
             </div>
           )}
 
