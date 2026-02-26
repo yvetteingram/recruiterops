@@ -257,8 +257,8 @@ const App: React.FC = () => {
 
   const STALL_DAYS = 3;
   const stalledCandidates = candidates.filter(c => {
-    if (!c.lastActivityAt) return true;
     if (c.stage === CandidateStage.PLACED || c.stage === CandidateStage.PRESENTED || c.stage === CandidateStage.REJECTED) return false;
+    if (!c.lastActivityAt) return true;
     const daysSince = (Date.now() - new Date(c.lastActivityAt).getTime()) / (1000 * 60 * 60 * 24);
     return daysSince >= STALL_DAYS;
   });
@@ -365,7 +365,16 @@ const App: React.FC = () => {
             candidates={candidates}
             jobs={jobs}
             profile={profile}
-            onUpdateCandidate={(c) => setCandidates(p => p.map(x => x.id === c.id ? c : x))}
+            onUpdateCandidate={(c) => {
+              setCandidates(p => p.map(x => x.id === c.id ? c : x));
+              // Auto-mark job as filled when candidate is placed
+              if (c.stage === CandidateStage.PLACED && c.jobId) {
+                setJobs(p => p.map(j => j.id === c.jobId ? { ...j, status: 'filled' } : j));
+                if (supabase && !c.isDemo) {
+                  supabase.from('jobs').update({ status: 'filled' }).eq('id', c.jobId);
+                }
+              }
+            }}
             onAddCandidate={(c) => setCandidates(p => [c, ...p])}
             onLog={addLog}
             filterJobId={selectedJobId}
