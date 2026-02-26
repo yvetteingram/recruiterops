@@ -22,11 +22,12 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
     if (loadingSummary) return;
     setLoadingSummary(true);
     try {
-      const aiSummary = await getDailySummary(jobs, candidates);
+      // Only send active (non-placed) candidates to AI
+      const activeCandidates = candidates.filter(c => c.stage !== CandidateStage.PLACED && c.stage !== CandidateStage.REJECTED);
+      const aiSummary = await getDailySummary(jobs, activeCandidates);
       setSummary(aiSummary);
-      // Wait 5 seconds before second call to avoid rate limit
       await new Promise(resolve => setTimeout(resolve, 5000));
-      const stalled = await detectStalledCandidates(candidates);
+      const stalled = await detectStalledCandidates(activeCandidates);
       setStalledCandidates(stalled);
       setLastBriefingTime(new Date());
     } catch (err) {
@@ -96,7 +97,14 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, jobs, candidates, logs, on
               </div>
               <div className="prose prose-invert prose-sm max-w-none text-slate-300 font-medium leading-relaxed">
                 {summary ? (
-                  <div className="whitespace-pre-wrap">{summary}</div>
+                  <div className="space-y-2">
+                    {summary.split('\n').map((line, i) => {
+                      const formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>');
+                      return line.trim() === '' 
+                        ? <div key={i} className="h-2" />
+                        : <p key={i} className="text-slate-300 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />;
+                    })}
+                  </div>
                 ) : (
                   <p className="italic text-slate-500">Generating your daily recruiting briefing...</p>
                 )}
