@@ -36,16 +36,19 @@ export const handler: Handler = async (event) => {
     const refunded         = params.get('refunded') === 'true';
     const cancelled        = params.get('cancelled') === 'true';
 
-    // ALWAYS log the raw webhook first — before any other logic
-    await supabase.from('webhook_logs').insert({
-      alert_type: alertType,
-      email,
-      sale_id: saleId,
-      raw_payload: event.body,
-    }).catch(err => console.error('webhook_log insert failed:', err));
+    // ALWAYS log the raw webhook first
+    try {
+      await supabase.from('webhook_logs').insert({
+        alert_type: alertType,
+        email,
+        sale_id: saleId,
+        raw_payload: event.body,
+      });
+    } catch (logErr) {
+      console.error('webhook_log insert failed:', logErr);
+    }
 
-    // Verify seller ID — reject anything that doesn't match
-    // Only enforce if GUMROAD_SELLER_ID env var is set
+    // Verify seller ID
     if (gumroadSellerId && sellerId !== gumroadSellerId) {
       console.warn('Unauthorized webhook — seller_id mismatch');
       return { statusCode: 401, body: 'Unauthorized' };
@@ -55,7 +58,6 @@ export const handler: Handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ success: true, note: 'Ping logged' }) };
     }
 
-    // Determine plan and status from event type
     const plan = PRODUCT_PLAN_MAP[productPermalink ?? ''] ?? 'pro';
     const now = new Date().toISOString();
 
@@ -68,31 +70,31 @@ export const handler: Handler = async (event) => {
       subscriptionStatus = 'active';
     }
 
-    // Look up existing profile by email
+    // Include plan in select so we can preserve it on cancellation
     const { data: existingProfile, error: fetchError } = await supabase
       .from('profiles')
-      .select('id, email')
+      .select('id, email, plan')
       .eq('email', email)
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
     if (existingProfile) {
-      // User exists — update their subscription status
+      const currentPlan = (existingProfile as any).plan ?? 'pro';
+
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
           subscription_status: subscriptionStatus,
           gumroad_sale_id: saleId,
           gumroad_subscriber_id: subscriberId ?? null,
-          plan: subscriptionStatus === 'active' ? plan : existingProfile.plan,
+          plan: subscriptionStatus === 'active' ? plan : currentPlan,
           updated_at: now,
         })
         .eq('id', existingProfile.id);
 
       if (updateError) throw updateError;
 
-      // If cancelled/refunded — archive their jobs and candidates
       if (subscriptionStatus === 'cancelled' || subscriptionStatus === 'expired') {
         const { data: userJobs } = await supabase
           .from('jobs')
@@ -102,21 +104,11 @@ export const handler: Handler = async (event) => {
 
         if (userJobs && userJobs.length > 0) {
           const jobIds = userJobs.map((j: any) => j.id);
-
-          await supabase
-            .from('jobs')
-            .update({ archived_at: now })
-            .in('id', jobIds);
-
-          await supabase
-            .from('candidates')
-            .update({ archived_at: now })
-            .in('job_id', jobIds);
-
+          await supabase.from('jobs').update({ archived_at: now }).in('id', jobIds);
+          await supabase.from('candidates').update({ archived_at: now }).in('job_id', jobIds);
           console.log(`Archived ${jobIds.length} jobs for cancelled user ${email}`);
         }
 
-        // Log usage event
         await supabase.from('usage_logs').insert({
           customer_id: existingProfile.id,
           product_id: null,
@@ -124,7 +116,6 @@ export const handler: Handler = async (event) => {
           metadata: { email, sale_id: saleId, jobs_archived: userJobs?.length || 0 },
         });
       } else {
-        // Log activation
         await supabase.from('usage_logs').insert({
           customer_id: existingProfile.id,
           product_id: null,
@@ -136,8 +127,6 @@ export const handler: Handler = async (event) => {
       console.log(`Updated profile for ${email} → ${subscriptionStatus}`);
 
     } else {
-      // User hasn't registered yet — store in pending_subscriptions
-      // Their profile will be activated when they sign up (via /auth/callback)
       if (subscriptionStatus === 'active') {
         const { error: pendingError } = await supabase
           .from('pending_subscriptions')
@@ -160,7 +149,6 @@ export const handler: Handler = async (event) => {
 
   } catch (error: any) {
     console.error('Webhook error:', error);
-    // Return 500 so Gumroad retries — this is a real failure
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || 'Internal server error' }),
